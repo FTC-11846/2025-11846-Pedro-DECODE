@@ -1,30 +1,3 @@
-## NOTICE
-
-This repository contains the public FTC SDK for the DECODE (2025-2026) competition season.
-
-## Welcome!
-This GitHub repository contains the source code that is used to build an Android app to control a *FIRST* Tech Challenge competition robot.  To use this SDK, download/clone the entire project to your local computer.
-
-## Requirements
-To use this Android Studio project, you will need Android Studio Ladybug (2024.2) or later.
-
-To program your robot in Blocks or OnBot Java, you do not need Android Studio.
-
-## Getting Started
-If you are new to robotics or new to the *FIRST* Tech Challenge, then you should consider reviewing the [FTC Blocks Tutorial](https://ftc-docs.firstinspires.org/programming_resources/blocks/Blocks-Tutorial.html) to get familiar with how to use the control system:
-
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[FTC Blocks Online Tutorial](https://ftc-docs.firstinspires.org/programming_resources/blocks/Blocks-Tutorial.html)
-
-Even if you are an advanced Java programmer, it is helpful to start with the [FTC Blocks tutorial](https://ftc-docs.firstinspires.org/programming_resources/blocks/Blocks-Tutorial.html), and then migrate to the [OnBot Java Tool](https://ftc-docs.firstinspires.org/programming_resources/onbot_java/OnBot-Java-Tutorial.html) or to [Android Studio](https://ftc-docs.firstinspires.org/programming_resources/android_studio_java/Android-Studio-Tutorial.html) afterwards.
-
-## Downloading the Project
-If you are an Android Studio programmer, there are several ways to download this repo.  Note that if you use the Blocks or OnBot Java Tool to program your robot, then you do not need to download this repository.
-
-* If you are a git user, you can clone the most current version of the repository:
-
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;git clone https://github.com/FIRST-Tech-Challenge/FtcRobotController.git</p>
-
-* Or, if you prefer, you can use the "Download Zip" button available through the main repository page.  Downloading the project as a .ZIP file will keep the size of the download manageable.
 
 * You can also download the project folder (as a .zip or .tar.gz archive file) from the Downloads subsection of the [Releases](https://github.com/FIRST-Tech-Challenge/FtcRobotController/releases) page for this repository.
 
@@ -66,16 +39,9 @@ The readme.md file located in the [/TeamCode/src/main/java/org/firstinspires/ftc
 * OnBotJava now has the concept of a project.  
   A project is a collection of related files.  A project may be chosen by selecting 'Example Project'
   from the 'File type:' dropdown.  Doing so will populate the dropdown to the immediate right with 
-  a list of projects to choose from.
+  a list of projects to che from.
   When selecting a project all of the related files appear in the left pane of the workspace 
-  underneath a directory with the chosen project name.
-  This is useful for example for ConceptExternalHardwareClass which has a dependency upon
-  RobotHardware.  This feature simplifies the usage of this Concept example by automatically
-  pulling in dependent classes.
-* Adds support for AndyMark ToF, IMU, and Color sensors.
-* The Driver Station app indicates if WiFi is disabled on the device.
-* Adds several features to the Color Processing software:
-  * DECODE colors `ARTIFACT_GREEN` and `ARTIFACT_PURPLE`
+  underneath a directory with* DECODE colors `ARTIFACT_GREEN` and `ARTIFACT_PURPLE`
   * Choice of the order of pre-processing steps Erode and Dilate
   * Best-fit preview shape called `circleFit`, an alternate to the existing `boxFit`
   * Sample OpMode `ConceptVisionColorLocator_Circle`, an alternate to the renamed `ConceptVisionColorLocator_Rectangle`
@@ -149,8 +115,7 @@ The readme.md file located in the [/TeamCode/src/main/java/org/firstinspires/ftc
 
 ### Bug Fixes
 
-* Fix an internal bug where if the RUN_TO_POSITION run mode was specified before a target position, recovery would require a power cycle. A side effect of this fix is that a stack trace identifying the location of the error is always produced in the log. Fixes issue [1345](https://github.com/FIRST-Tech-Challenge/FtcRobotController/issues/1345).
-* Throws a helpful exception if region of interest is set to null when building a PredominantColorProcessor. Also sets the default RoI to the full frame. Addresses issue [1076](FIRST-Tech-Challenge/FtcRobotController#1076)
+* Fix an internal bug where if the RUN_TO_POSITION run mode was specified before a target position, recovery would require a power cycle. A side effect of this fix is that
 * Throws a helpful exception if user tries to construct an ImageRegion with malformed boundaries.  Addresses issue [1078](FIRST-Tech-Challenge/FtcRobotController#1078)
 
 ## Version 10.1.1 (20241102-092223)
