@@ -18,6 +18,11 @@ public class Constants {
             .mass(6)   //just a guess need to weigh this
             .forwardZeroPowerAcceleration(-44.95)
             .lateralZeroPowerAcceleration(-58.36);
+//            .centripetalScaling(0.00005)
+//            .coefficientsHeadingPIDF(0,0.01,0,1.5)
+//            .coefficientsDrivePIDF(0.00001,0.01,0,0.03,0.6)
+//            .integralTranslational(0,0.015,0,0.001);
+
     public static PathConstraints pathConstraints = new PathConstraints(0.99, 100, 1, 1);
 
     public static MecanumConstants driveConstants = new MecanumConstants()
