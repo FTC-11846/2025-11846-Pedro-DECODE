@@ -1,10 +1,11 @@
 package org.firstinspires.ftc.teamcode.pedroPathing;
 
+import com.pedropathing.control.FilteredPIDFCoefficients;
+import com.pedropathing.control.PIDFCoefficients;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.follower.FollowerConstants;
 import com.pedropathing.ftc.FollowerBuilder;
 import com.pedropathing.ftc.drivetrains.MecanumConstants;
-import com.pedropathing.ftc.localization.Encoder;
 import com.pedropathing.ftc.localization.constants.PinpointConstants;
 import com.pedropathing.paths.PathConstraints;
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
@@ -17,11 +18,13 @@ public class Constants {
     public static FollowerConstants followerConstants = new FollowerConstants()
             .mass(6)   //just a guess need to weigh this
             .forwardZeroPowerAcceleration(-44.95)
-            .lateralZeroPowerAcceleration(-58.36);
-//            .centripetalScaling(0.00005)
-//            .coefficientsHeadingPIDF(0,0.01,0,1.5)
-//            .coefficientsDrivePIDF(0.00001,0.01,0,0.03,0.6)
-//            .integralTranslational(0,0.015,0,0.001);
+            .lateralZeroPowerAcceleration(-58.36)
+            .centripetalScaling(0.00005)
+            .headingPIDFCoefficients(new PIDFCoefficients(0,0.01,0,1.5))
+            .drivePIDFCoefficients(new FilteredPIDFCoefficients(0.00001,0.01,0,0.03,0.6))
+//            .translationalIntegral(new PIDFCoefficients(0,0.015,0,0.001))  <-- FollowerConstants doesn't have a setter method for this, so need to switch to tuning the standard translational, not the integral
+            .translationalPIDFCoefficients(new PIDFCoefficients(0,0.15,0,0.001));   //  Not actually tuned yet, this is default values.
+    // !!! Need to double-check if the values in Panels were in the same order as required by the Setter !!!    http://192.168.43.1:8001
 
     public static PathConstraints pathConstraints = new PathConstraints(0.99, 100, 1, 1);
 
