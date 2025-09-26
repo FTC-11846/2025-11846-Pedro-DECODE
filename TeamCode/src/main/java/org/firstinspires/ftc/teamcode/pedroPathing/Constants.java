@@ -16,14 +16,14 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
 public class Constants {
     public static FollowerConstants followerConstants = new FollowerConstants()
-            .mass(6)   //just a guess need to weigh this
-            .forwardZeroPowerAcceleration(-44.95)
-            .lateralZeroPowerAcceleration(-58.36)
-            .centripetalScaling(0.00005)
-            .headingPIDFCoefficients(new PIDFCoefficients(0,0.01,0,1.5))
-            .drivePIDFCoefficients(new FilteredPIDFCoefficients(0.00001,0.01,0,0.03,0.6))
-//            .translationalIntegral(new PIDFCoefficients(0,0.015,0,0.001))  <-- FollowerConstants doesn't have a setter method for this, so need to switch to tuning the standard translational, not the integral
-            .translationalPIDFCoefficients(new PIDFCoefficients(0,0.15,0,0.001));   //  Not actually tuned yet, this is default values.
+            .mass(5.21);   //TestBot, 11.5lbs, checked on a really crappy scale
+//            .forwardZeroPowerAcceleration(-44.95)
+//            .lateralZeroPowerAcceleration(-58.36)
+// !! WARNING: The Panels Dashboard D, F, I, P (, T) !!
+//            .centripetalScaling(0.00005)
+//            .headingPIDFCoefficients(new PIDFCoefficients(1.5,0,0,0.01))
+//            .drivePIDFCoefficients(new FilteredPIDFCoefficients(0.03,0,0.00001,0.6,0.01))
+//            .translationalPIDFCoefficients(new PIDFCoefficients(0.001,0.15,0,0.001));   //  Not actually tuned yet, this is default values.
     // !!! Need to double-check if the values in Panels were in the same order as required by the Setter !!!    http://192.168.43.1:8001
 
     public static PathConstraints pathConstraints = new PathConstraints(0.99, 100, 1, 1);
@@ -37,9 +37,9 @@ public class Constants {
             .leftFrontMotorDirection(DcMotorSimple.Direction.REVERSE)
             .leftRearMotorDirection(DcMotorSimple.Direction.REVERSE)
             .rightFrontMotorDirection(DcMotorSimple.Direction.FORWARD)
-            .rightRearMotorDirection(DcMotorSimple.Direction.FORWARD)
-            .xVelocity(42.48)
-            .yVelocity(35.59);
+            .rightRearMotorDirection(DcMotorSimple.Direction.FORWARD);
+//            .xVelocity(42.48)
+//            .yVelocity(35.59);
 
     public static PinpointConstants localizerConstants = new PinpointConstants()
             .forwardPodY(3)
