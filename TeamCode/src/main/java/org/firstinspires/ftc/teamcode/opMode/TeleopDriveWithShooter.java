@@ -30,6 +30,7 @@ package org.firstinspires.ftc.teamcode.opMode;
 
 import static org.firstinspires.ftc.teamcode.pedroPathing.Tuning.follower;
 
+import com.bylazar.configurables.annotations.Configurable;
 import com.pedropathing.follower.Follower;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
@@ -59,7 +60,8 @@ import java.util.TimerTask;
  *
  *  This was copied from external samples to the 2025-11846 repo's teamcode folder 2025-09-14
  */
-@TeleOp(name = "Robot: Robot Relative Mecanum Drive With Shooter", group = "Robot")
+@Configurable
+@TeleOp(name = "Robot Relative P-Follower With Shooter", group = "Robot")
 public class TeleopDriveWithShooter extends OpMode {
     // This declares the motor to be used for the shooter
     DcMotorEx shooterMotor;
@@ -73,7 +75,11 @@ public class TeleopDriveWithShooter extends OpMode {
     ElapsedTime indexTimer = new ElapsedTime();
 
     boolean indexOn, rightBumperPressedLast, leftBumperPressedLast, bPressedLast, checkTimer = false;
-    double shooterVelocity = 0;
+//    double shooterVelocity = 0;
+    double shooterVoltage = 0;
+    double shooterOff = 0;
+    double shooterLow = 0.5;
+    double shooterHigh = 1.0;
 
     // This declares the IMU needed to get the current direction the robot is facing
     IMU imu;
@@ -113,8 +119,9 @@ public class TeleopDriveWithShooter extends OpMode {
     @Override
     public void loop() {
         telemetry.addLine("Telemetry Values");
-        telemetry.addData("ShooterVelocity value", shooterVelocity);
-        telemetry.addData("Shooter Velocity (RPM)", shooterMotor.getVelocity());
+//        telemetry.addData("ShooterVelocity value", shooterVelocity);
+        telemetry.addData("ShooterVoltage value", shooterVoltage);
+        telemetry.addData("Shooter Velocity (RPM)", shooterMotor.getVelocity(AngleUnit.DEGREES)/6);
         telemetry.addData("Robot X:", follower.getPose().getX());
         telemetry.addData("Robot Y:", follower.getPose().getY());
         telemetry.addData("Robot Heading:", follower.getPose().getHeading());
@@ -137,14 +144,15 @@ public class TeleopDriveWithShooter extends OpMode {
         // If you press the left bumper, you get a drive from the point of view of the robot
         // (much like driving an RC vehicle)
         if (gamepad1.left_bumper) {
-            follower.setTeleOpDrive(-gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x, false);
+            follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, -gamepad1.right_stick_x, false);
         } else {
-            follower.setTeleOpDrive(-gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x, true);
+            follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, -gamepad1.right_stick_x, true);
         }
 
         follower.update();
 
-        runShooterVelocity();
+//        runShooterVelocity();
+        runShooterVoltage();
 
         if (gamepad2.xWasPressed()){
             if(indexOn){
@@ -168,8 +176,9 @@ public class TeleopDriveWithShooter extends OpMode {
 
         if(gamepad2.right_bumper){
             if(!rightBumperPressedLast){
-                shooterVelocity = 200;
+//                shooterVelocity = 200;
                 //DO NOT GO OVER 500!!!
+                shooterVoltage = shooterHigh;
             }else{
                 rightBumperPressedLast = false;
             }
@@ -177,8 +186,8 @@ public class TeleopDriveWithShooter extends OpMode {
 
         if(gamepad2.left_bumper){
             if(!leftBumperPressedLast){
-                shooterVelocity = 170;
-                //DO NOT GO OVER 500!!!
+//                shooterVelocity = 100;
+                shooterVoltage = shooterLow;
             }else{
                 leftBumperPressedLast = false;
             }
@@ -186,7 +195,8 @@ public class TeleopDriveWithShooter extends OpMode {
 
         if(gamepad2.b){
             if(!bPressedLast){
-                shooterVelocity = 0;
+//                shooterVelocity = 0;
+                shooterVoltage = shooterOff;
             }else{
                 bPressedLast = false;
             }
@@ -199,8 +209,12 @@ public class TeleopDriveWithShooter extends OpMode {
         shooterMotor.setPower(power);
     }
 
-    public void runShooterVelocity(){
-        shooterMotor.setVelocity(shooterVelocity,AngleUnit.DEGREES);
+//    public void runShooterVelocity(){
+//        shooterMotor.setVelocity(shooterVelocity,AngleUnit.DEGREES);
+//    }
+
+    public void runShooterVoltage(){
+        shooterMotor.setPower(shooterVoltage);
     }
 
     public void index(double power){
