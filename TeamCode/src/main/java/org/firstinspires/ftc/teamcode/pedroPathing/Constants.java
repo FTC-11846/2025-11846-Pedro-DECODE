@@ -1,11 +1,11 @@
 package org.firstinspires.ftc.teamcode.pedroPathing;
 
-import com.pedropathing.control.FilteredPIDFCoefficients;
 import com.pedropathing.control.PIDFCoefficients;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.follower.FollowerConstants;
 import com.pedropathing.ftc.FollowerBuilder;
 import com.pedropathing.ftc.drivetrains.MecanumConstants;
+import com.pedropathing.ftc.localization.Encoder;
 import com.pedropathing.ftc.localization.constants.PinpointConstants;
 import com.pedropathing.paths.PathConstraints;
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
@@ -16,16 +16,11 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
 public class Constants {
     public static FollowerConstants followerConstants = new FollowerConstants()
-            .mass(5.21);   //TestBot, 11.5lbs, checked on a really crappy scale
-//            .forwardZeroPowerAcceleration(-44.95)
-//            .lateralZeroPowerAcceleration(-58.36)
-// !! WARNING: The Panels Dashboard D, F, I, P (, T) !!
-//            .centripetalScaling(0.00005)
-//            .headingPIDFCoefficients(new PIDFCoefficients(1.5,0,0,0.01))
-//            .drivePIDFCoefficients(new FilteredPIDFCoefficients(0.03,0,0.00001,0.6,0.01))
-//            .translationalPIDFCoefficients(new PIDFCoefficients(0.001,0.15,0,0.001));   //  Not actually tuned yet, this is default values.
-    // !!! Need to double-check if the values in Panels were in the same order as required by the Setter !!!    http://192.168.43.1:8001
-
+            .mass(6)   //just a guess need to weigh this
+            .forwardZeroPowerAcceleration(-50.943)
+            .lateralZeroPowerAcceleration(-63.789)
+            .useSecondaryHeadingPIDF(true)
+            .translationalPIDFCoefficients(new PIDFCoefficients(0.375,0,0.025,0));
     public static PathConstraints pathConstraints = new PathConstraints(0.99, 100, 1, 1);
 
     public static MecanumConstants driveConstants = new MecanumConstants()
@@ -37,9 +32,9 @@ public class Constants {
             .leftFrontMotorDirection(DcMotorSimple.Direction.REVERSE)
             .leftRearMotorDirection(DcMotorSimple.Direction.REVERSE)
             .rightFrontMotorDirection(DcMotorSimple.Direction.FORWARD)
-            .rightRearMotorDirection(DcMotorSimple.Direction.FORWARD);
-//            .xVelocity(42.48)
-//            .yVelocity(35.59);
+            .rightRearMotorDirection(DcMotorSimple.Direction.FORWARD)
+            .xVelocity(41.356)
+            .yVelocity(31.839);
 
     public static PinpointConstants localizerConstants = new PinpointConstants()
             .forwardPodY(3)
