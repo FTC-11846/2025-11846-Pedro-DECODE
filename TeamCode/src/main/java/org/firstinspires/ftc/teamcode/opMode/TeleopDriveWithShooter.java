@@ -2,8 +2,7 @@
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted (subject to the limitations in the disclaimer below) provided that
- * the following conditions are met:
- *
+ * the following conditions are met: *
  * Redistributions of source code must retain the above copyright notice, this list
  * of conditions and the following disclaimer.
  *
@@ -28,15 +27,17 @@
  */
 package org.firstinspires.ftc.teamcode.opMode;
 
+import static org.firstinspires.ftc.teamcode.pedroPathing.Tuning.draw;
 import static org.firstinspires.ftc.teamcode.pedroPathing.Tuning.follower;
 
 import com.bylazar.configurables.annotations.Configurable;
+import com.bylazar.telemetry.PanelsTelemetry;
+import com.bylazar.telemetry.TelemetryManager;
 import com.pedropathing.follower.Follower;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
-import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.IMU;
@@ -44,9 +45,6 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
-
-import java.util.Timer;
-import java.util.TimerTask;
 
 /*
  * This OpMode illustrates how to program your robot to drive field relative.  This means
@@ -60,7 +58,6 @@ import java.util.TimerTask;
  *
  *  This was copied from external samples to the 2025-11846 repo's teamcode folder 2025-09-14
  */
-@Configurable
 @TeleOp(name = "Robot Relative P-Follower With Shooter", group = "Robot")
 public class TeleopDriveWithShooter extends OpMode {
     // This declares the motor to be used for the shooter
@@ -70,22 +67,32 @@ public class TeleopDriveWithShooter extends OpMode {
     CRServo leftIndexServo;
     CRServo rightIndexServo;
 
+    // Define a class to hold our tunable constants
+    @Configurable
+    public static class ShooterConstants {
+        public static double SHOOTER_LOW_VOLTAGE = 0.5;
+        public static double SHOOTER_HIGH_VOLTAGE = 1.0;
+        public static double INDEXER_RUNTIME_SECONDS = 0.25;
+    }
+
     public static Follower follower;
+    private TelemetryManager telemetryM;
 
     ElapsedTime indexTimer = new ElapsedTime();
+    ElapsedTime gamepadRateLimit = new ElapsedTime();
+    private static final double RATE_LIMIT_MS = 300; // Prevent multiple presses within 300ms
 
     boolean indexOn, rightBumperPressedLast, leftBumperPressedLast, bPressedLast, checkTimer = false;
-//    double shooterVelocity = 0;
     double shooterVoltage = 0;
-    double shooterOff = 0;
-    double shooterLow = 0.5;
-    double shooterHigh = 1.0;
 
     // This declares the IMU needed to get the current direction the robot is facing
     IMU imu;
 
     @Override
     public void init() {
+        // Initialize Panels Telemetry
+        telemetryM = PanelsTelemetry.INSTANCE.getTelemetry();
+
         follower = Constants.createFollower(hardwareMap);
 
         shooterMotor = hardwareMap.get(DcMotorEx.class, "launchMotor");
@@ -118,95 +125,73 @@ public class TeleopDriveWithShooter extends OpMode {
 
     @Override
     public void loop() {
-        telemetry.addLine("Telemetry Values");
-//        telemetry.addData("ShooterVelocity value", shooterVelocity);
-        telemetry.addData("ShooterVoltage value", shooterVoltage);
-        telemetry.addData("Shooter Velocity (RPM)", shooterMotor.getVelocity(AngleUnit.DEGREES)/6);
-        telemetry.addData("Robot X:", follower.getPose().getX());
-        telemetry.addData("Robot Y:", follower.getPose().getY());
-        telemetry.addData("Robot Heading:", follower.getPose().getHeading());
-        telemetry.addData("Total Heading:", follower.getTotalHeading());
-        telemetry.addLine("Gamepad 1:");
-        telemetry.addLine("Press A to reset Yaw");
-        telemetry.addLine("Hold left bumper to drive in robot relative");
-        telemetry.addLine("The left joystick sets the robot direction");
-        telemetry.addLine("Moving the right joystick left and right turns the robot");
-        telemetry.addLine("Gamepad 2:");
-        telemetry.addLine("Press X to fire a loaded ball");
-        telemetry.addLine("Press the left bumper to shoot from close to the goals");
-        telemetry.addLine("Press the right bumper to shoot from far to the goals");
-        telemetry.addLine("Press B to bring the shooter to a stop");
-        // If you press the A button, then you reset the Yaw to be zero from the way
-        // the robot is currently pointing
+        // Run shooter logic first to apply power from last loop
+        runShooterVoltage();
+
+        // Handle Gamepad 1 (Driving)
         if (gamepad1.a) {
             imu.resetYaw();
         }
-        // If you press the left bumper, you get a drive from the point of view of the robot
-        // (much like driving an RC vehicle)
         if (gamepad1.left_bumper) {
             follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, -gamepad1.right_stick_x, false);
         } else {
             follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, -gamepad1.right_stick_x, true);
         }
 
-        follower.update();
+        // Handle Gamepad 2 (Shooter and Indexer)
+        if (gamepad2.right_bumper && !rightBumperPressedLast) {
+            shooterVoltage = ShooterConstants.SHOOTER_HIGH_VOLTAGE;
+        }
+        rightBumperPressedLast = gamepad2.right_bumper;
 
-//        runShooterVelocity();
-        runShooterVoltage();
+        if (gamepad2.left_bumper && !leftBumperPressedLast) {
+            shooterVoltage = ShooterConstants.SHOOTER_LOW_VOLTAGE;
+        }
+        leftBumperPressedLast = gamepad2.left_bumper;
 
-        if (gamepad2.xWasPressed()){
-            if(indexOn){
-                index(0);
-                indexOn = false;
-                checkTimer = false;
-            }else{
+        if (gamepad2.b && !bPressedLast) {
+            shooterVoltage = 0;
+        }
+        bPressedLast = gamepad2.b;
+
+
+        if (gamepad2.x && gamepadRateLimit.milliseconds() > RATE_LIMIT_MS) {
+            if (!indexOn) {
                 index(1);
                 indexOn = true;
                 indexTimer.reset();
                 checkTimer = true;
+                gamepadRateLimit.reset(); // Reset rate limit timer
             }
         }
 
-        telemetry.addData("Timer", indexTimer.seconds());
-        if (indexTimer.seconds() >= 0.25 && checkTimer) {
+        // Timer cleanup (same as current)
+        if (checkTimer && indexTimer.seconds() >= 0.25) {
             index(0);
             indexOn = false;
             checkTimer = false;
         }
 
-        if(gamepad2.right_bumper){
-            if(!rightBumperPressedLast){
-//                shooterVelocity = 200;
-                //DO NOT GO OVER 500!!!
-                shooterVoltage = shooterHigh;
-            }else{
-                rightBumperPressedLast = false;
-            }
-        }
 
-        if(gamepad2.left_bumper){
-            if(!leftBumperPressedLast){
-//                shooterVelocity = 100;
-                shooterVoltage = shooterLow;
-            }else{
-                leftBumperPressedLast = false;
-            }
-        }
+        // Update follower and telemetry
+        follower.update();
 
-        if(gamepad2.b){
-            if(!bPressedLast){
-//                shooterVelocity = 0;
-                shooterVoltage = shooterOff;
-            }else{
-                bPressedLast = false;
-            }
-        }
+        telemetryM.addData("Mode", gamepad1.left_bumper ? "Robot Relative" : "Field Relative");
+        telemetryM.addData("Shooter Target Voltage", shooterVoltage);
+        telemetryM.addData("Shooter Actual Velocity (RPM)", shooterMotor.getVelocity(AngleUnit.DEGREES)/6);
+        telemetryM.addData("Robot X", follower.getPose().getX());
+        telemetryM.addData("Robot Y", follower.getPose().getY());
+        telemetryM.addData("Robot Heading", follower.getPose().getHeading());
+        telemetryM.update();
 
-        updateTelemetry(telemetry);
+        draw();
     }
 
-    public void shoot(double power){
-        shooterMotor.setPower(power);
+    @Override
+    public void stop() {
+        // Ensure motors are stopped when OpMode ends
+        shooterMotor.setPower(0);
+        index(0);
     }
 
 //    public void runShooterVelocity(){
