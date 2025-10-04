@@ -29,6 +29,7 @@
 package org.firstinspires.ftc.teamcode.OpModes;
 
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -49,6 +50,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
  *  This was copied from external samples to the 2025-11846 repo's teamcode folder 2025-09-14
  */
 @TeleOp(name = "Robot: Field Relative Mecanum Drive", group = "Robot")
+@Disabled  // Add this line to each OpMode
 public class TeleopMecanumFieldRelativeDrive extends OpMode {
     // This declares the four motors needed
     DcMotor frontLeftDrive;

@@ -29,6 +29,7 @@
 package org.firstinspires.ftc.teamcode.OpModes;
 
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -63,6 +64,7 @@ import java.util.List;
  * for Wayland M.S. FTC Team 2025 DECODE season.
  */
 @TeleOp(name = "Robot: Mecanum + AprilTag Field Relative", group = "Robot")
+@Disabled  // Add this line to each OpMode
 public class TeleOpMecanumRelativeAndAprilTags extends OpMode {
 
     // Drive system motors

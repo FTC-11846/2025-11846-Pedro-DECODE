@@ -1,0 +1,143 @@
+
+package org.firstinspires.ftc.teamcode.OpModes;
+
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.hardware.CRServo;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.util.ElapsedTime;
+import com.pedropathing.follower.Follower;
+import com.pedropathing.geometry.Pose;
+import com.pedropathing.geometry.Vector;
+
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
+
+@Disabled  // Add this line to each OpMode
+public abstract class TeleopDriveWithShooterBase extends OpMode {
+    // Hardware
+    protected Follower follower;
+    protected DcMotorEx shooterMotor;
+    protected CRServo leftIndexServo;
+    protected CRServo rightIndexServo;
+    
+    // Timing and state
+    protected ElapsedTime indexTimer = new ElapsedTime();
+    protected ElapsedTime gamepadRateLimit = new ElapsedTime();
+    protected boolean indexOn = false;
+    protected boolean checkTimer = false;
+    protected boolean rightBumperPressedLast = false;
+    protected boolean leftBumperPressedLast = false;
+    protected double shooterVelocity = 0;
+    
+    private static final double RATE_LIMIT_MS = 300;
+
+    // Abstract method - each position variant provides its starting pose
+    public abstract Pose getStartingPose();
+
+    @Override
+    public void init() {
+        // Initialize Pedro Pathing follower
+        follower = Constants.createFollower(hardwareMap);
+        follower.setStartingPose(getStartingPose());
+        
+        // Initialize shooter hardware
+        shooterMotor = hardwareMap.get(DcMotorEx.class, "sm");
+        leftIndexServo = hardwareMap.get(CRServo.class, "lis");
+        rightIndexServo = hardwareMap.get(CRServo.class, "ris");
+        
+        // Set directions
+        shooterMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+        leftIndexServo.setDirection(DcMotorSimple.Direction.REVERSE);
+    }
+
+    @Override
+    public void loop() {
+        // Update follower
+        follower.update();
+        
+        // Manual drive with Pedro Pathing
+        if (!follower.isBusy()) {
+            Vector driveVector = new Vector();
+            driveVector.setOrthogonalComponents(-gamepad1.left_stick_y, gamepad1.left_stick_x);
+            driveVector.setMagnitude(Math.min(driveVector.getMagnitude(), 1.0));
+            
+            if (gamepad1.left_bumper) {
+                // Robot-relative drive
+                follower.setTeleOpMovementVectors(driveVector, gamepad1.right_stick_x, false);
+            } else {
+                // Field-relative drive  
+                follower.setTeleOpMovementVectors(driveVector, gamepad1.right_stick_x, true);
+            }
+        }
+
+        // Reset IMU on A button
+        if (gamepad1.a) {
+            follower.setPose(getStartingPose());
+        }
+
+        // Shooter controls
+        runShooterVelocity();
+        handleShooterButtons();
+        handleIndexButton();
+
+        // Telemetry
+        displayTelemetry();
+    }
+
+    private void handleShooterButtons() {
+        if (gamepad2.right_bumper && !rightBumperPressedLast) {
+            shooterVelocity = 200; // Far shot
+        }
+        rightBumperPressedLast = gamepad2.right_bumper;
+
+        if (gamepad2.left_bumper && !leftBumperPressedLast) {
+            shooterVelocity = 170; // Near shot
+        }
+        leftBumperPressedLast = gamepad2.left_bumper;
+    }
+
+    private void handleIndexButton() {
+        // Rate-limited X button for indexing
+        if (gamepad2.x && gamepadRateLimit.milliseconds() > RATE_LIMIT_MS) {
+            if (!indexOn) {
+                index(1);
+                indexOn = true;
+                indexTimer.reset();
+                checkTimer = true;
+                gamepadRateLimit.reset();
+            }
+        }
+
+        // Timer cleanup
+        if (checkTimer && indexTimer.seconds() >= 0.25) {
+            index(0);
+            indexOn = false;
+            checkTimer = false;
+        }
+    }
+
+    private void displayTelemetry() {
+        telemetry.addData("Starting Position", getStartingPose().toString());
+        telemetry.addData("Current Position", follower.getPose().toString());
+        telemetry.addData("Shooter Velocity", shooterVelocity);
+        telemetry.addData("Shooter RPM", shooterMotor.getVelocity());
+        telemetry.addLine();
+        telemetry.addLine("Gamepad 1:");
+        telemetry.addLine("Press A to reset position");
+        telemetry.addLine("Hold left bumper for robot-relative drive");
+        telemetry.addLine();
+        telemetry.addLine("Gamepad 2:");
+        telemetry.addLine("Press X to fire");
+        telemetry.addLine("Left bumper: Close shot (170)");
+        telemetry.addLine("Right bumper: Far shot (200)");
+    }
+
+    private void runShooterVelocity() {
+        shooterMotor.setVelocity(shooterVelocity, AngleUnit.DEGREES);
+    }
+
+    private void index(double power) {
+        leftIndexServo.setPower(power);
+        rightIndexServo.setPower(power);

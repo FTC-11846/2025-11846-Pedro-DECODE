@@ -29,11 +29,10 @@ package org.firstinspires.ftc.teamcode.opMode;
 
 import static org.firstinspires.ftc.teamcode.pedroPathing.Tuning.draw;
 import static org.firstinspires.ftc.teamcode.pedroPathing.Tuning.follower;
-
 import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.bylazar.telemetry.TelemetryManager;
-import com.pedropathing.follower.Follower;
+import com.pedropathing.geometry.Pose;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -45,6 +44,10 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
+
+import com.bylazar.field.FieldManager;
+import com.bylazar.field.PanelsField;
+import com.bylazar.field.Style;
 
 /*
  * This OpMode illustrates how to program your robot to drive field relative.  This means
@@ -60,14 +63,7 @@ import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
  */
 @TeleOp(name = "Robot Relative P-Follower With Shooter", group = "Robot")
 public class TeleopDriveWithShooter extends OpMode {
-    // This declares the motor to be used for the shooter
-    DcMotorEx shooterMotor;
-
-    // This declares the two servos used for indexing
-    CRServo leftIndexServo;
-    CRServo rightIndexServo;
-
-    // Define a class to hold our tunable constants
+    // Shooter constants inner class
     @Configurable
     public static class ShooterConstants {
         public static double SHOOTER_LOW_VOLTAGE = 0.5;
@@ -75,7 +71,38 @@ public class TeleopDriveWithShooter extends OpMode {
         public static double INDEXER_RUNTIME_SECONDS = 0.25;
     }
 
-    public static Follower follower;
+    // Starting position constants inner class
+    @Configurable
+    public static class StartPoseConstants {
+        // These constants define the starting positions for different alliance/field positions
+        // Public so they're editable in dashboard
+        public static Pose RED_NEAR = new Pose(56, 8, Math.toRadians(0));
+        public static Pose RED_FAR = new Pose(56, 136, Math.toRadians(0));
+        public static Pose BLUE_NEAR = new Pose(86, 8, Math.toRadians(180));
+        public static Pose BLUE_FAR = new Pose(86, 136, Math.toRadians(180));
+
+        // Private helpers for the selection menu - not editable
+        private static final String[] POSITION_NAMES = {"Red Near", "Red Far", "Blue Near", "Blue Far"};
+        private static final Pose[] POSITIONS = {
+                StartPoseConstants.RED_NEAR,
+                StartPoseConstants.RED_FAR,
+                StartPoseConstants.BLUE_NEAR,
+                StartPoseConstants.BLUE_FAR
+        };
+    }
+
+    // This declares the motor to be used for the shooter
+    DcMotorEx shooterMotor;
+
+    // This declares the two servos used for indexing
+    CRServo leftIndexServo;
+    CRServo rightIndexServo;
+
+    // Add these fields to the main class:
+    private int selectedPosition = 0;
+    private boolean positionSelected = false;
+    private Pose startingPosition = StartPoseConstants.POSITIONS[0];
+
     private TelemetryManager telemetryM;
 
     ElapsedTime indexTimer = new ElapsedTime();
@@ -96,25 +123,48 @@ public class TeleopDriveWithShooter extends OpMode {
         follower = Constants.createFollower(hardwareMap);
 
         shooterMotor = hardwareMap.get(DcMotorEx.class, "launchMotor");
-
         leftIndexServo = hardwareMap.get(CRServo.class, "feedServoL");
         rightIndexServo = hardwareMap.get(CRServo.class, "feedServoR");
 
         shooterMotor.setDirection(DcMotorSimple.Direction.REVERSE);
-
-        //For the servos to work properly, the left index servo must be reversed
         leftIndexServo.setDirection(DcMotorSimple.Direction.REVERSE);
 
         imu = hardwareMap.get(IMU.class, "imu");
-        // This needs to be changed to match the orientation on your robot
         RevHubOrientationOnRobot.LogoFacingDirection logoDirection =
                 RevHubOrientationOnRobot.LogoFacingDirection.RIGHT;
         RevHubOrientationOnRobot.UsbFacingDirection usbDirection =
                 RevHubOrientationOnRobot.UsbFacingDirection.UP;
-
         RevHubOrientationOnRobot orientationOnRobot = new
                 RevHubOrientationOnRobot(logoDirection, usbDirection);
         imu.initialize(new IMU.Parameters(orientationOnRobot));
+    }
+
+    @Override
+    public void init_loop() {
+        if (!positionSelected) {
+            if (gamepad1.dpad_up && gamepadRateLimit.milliseconds() > RATE_LIMIT_MS) {
+                selectedPosition = (selectedPosition + 1) % StartPoseConstants.POSITIONS.length;
+                gamepadRateLimit.reset();
+            } else if (gamepad1.dpad_down && gamepadRateLimit.milliseconds() > RATE_LIMIT_MS) {
+                selectedPosition = (selectedPosition - 1 + StartPoseConstants.POSITIONS.length) % StartPoseConstants.POSITIONS.length;
+                gamepadRateLimit.reset();
+            }
+
+            if (gamepad1.a) {
+                startingPosition = StartPoseConstants.POSITIONS[selectedPosition];
+                positionSelected = true;
+                follower.setPose(startingPosition);
+            }
+
+            telemetryM.debug("=== SELECT STARTING POSITION ===");
+            telemetryM.debug("Use DPAD UP/DOWN to select, Press A to confirm");
+            telemetryM.debug("");
+            for (int i = 0; i < StartPoseConstants.POSITION_NAMES.length; i++) {
+                String marker = (i == selectedPosition) ? " >>> " : "     ";
+                telemetryM.debug(marker + StartPoseConstants.POSITION_NAMES[i]);
+            }
+            telemetryM.update(telemetry);
+        }
     }
 
     @Override
@@ -125,11 +175,15 @@ public class TeleopDriveWithShooter extends OpMode {
 
     @Override
     public void loop() {
+        telemetryM.debug("Start Position", StartPoseConstants.POSITION_NAMES[selectedPosition]);
         // Run shooter logic first to apply power from last loop
         runShooterVoltage();
 
         // Handle Gamepad 1 (Driving)
-        if (gamepad1.a) {
+
+        // Holdover for Field-Relative driving, LT+RT+a to rotate field 90-degrees,
+        // could potentially mess up other things using localization, we should eventually delete this
+        if (gamepad1.left_trigger > 0.5 && gamepad1.right_trigger > 0.5 && gamepad1.a) {
             imu.resetYaw();
         }
         if (gamepad1.left_bumper) {
@@ -176,15 +230,21 @@ public class TeleopDriveWithShooter extends OpMode {
         // Update follower and telemetry
         follower.update();
 
-        telemetryM.addData("Mode", gamepad1.left_bumper ? "Robot Relative" : "Field Relative");
-        telemetryM.addData("Shooter Target Voltage", shooterVoltage);
-        telemetryM.addData("Shooter Actual Velocity (RPM)", shooterMotor.getVelocity(AngleUnit.DEGREES)/6);
-        telemetryM.addData("Robot X", follower.getPose().getX());
-        telemetryM.addData("Robot Y", follower.getPose().getY());
-        telemetryM.addData("Robot Heading", follower.getPose().getHeading());
-        telemetryM.update();
+        telemetryM.debug("Mode", gamepad1.left_bumper ? "Robot Relative" : "Field Relative");
+        telemetryM.debug("Shooter Target Voltage", shooterVoltage);
+        telemetryM.debug("Shooter Actual Velocity (RPM)", shooterMotor.getVelocity(AngleUnit.DEGREES)/6);
+        telemetryM.debug("Robot X", follower.getPose().getX());
+        telemetryM.debug("Robot Y", follower.getPose().getY());
+        telemetryM.debug("Robot Heading", follower.getPose().getHeading());
+        telemetryM.update(telemetry);
 
         draw();
+
+//        // In your loop() method:
+//        FieldManager panelsField = PanelsField.INSTANCE.getField();
+//        Style robotStyle = new Style("", "#3F51B5", 0.75);
+//        panelsField.drawRobot(follower.getPose(), robotStyle);
+//        panelsField.update();
     }
 
     @Override
