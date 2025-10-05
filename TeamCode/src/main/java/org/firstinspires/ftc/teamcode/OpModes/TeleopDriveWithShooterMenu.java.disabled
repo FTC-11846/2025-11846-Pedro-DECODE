@@ -1,0 +1,101 @@
+package org.firstinspires.ftc.teamcode.OpModes;
+
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.pedropathing.telemetry.SelectableOpMode;
+import com.pedropathing.geometry.Pose;
+import org.firstinspires.ftc.teamcode.pedroPathing.StartingPositions;
+
+@TeleOp(name = "Drive With Shooter Menu", group = "Robot")
+@Disabled  // Add this line to each OpMode
+public class TeleopDriveWithShooterMenu extends SelectableOpMode {
+
+    public TeleopDriveWithShooterMenu() {
+        registerOpMode("Red Near", new RedNearDrive());
+        registerOpMode("Red Far", new RedFarDrive());
+        registerOpMode("Blue Near", new BlueNearDrive());
+        registerOpMode("Blue Far", new BlueFarDrive());
+    }
+
+    // Red Near position OpMode
+    class RedNearDrive extends TeleopDriveWithShooterBase {
+        @Override
+        public Pose getStartingPose() {
+            return StartingPositions.RED_NEAR;
+        }
+    }
+
+    // Red Far position OpMode
+    class RedFarDrive extends TeleopDriveWithShooterBase {
+        @Override
+        public Pose getStartingPose() {
+            return StartingPositions.RED_FAR;
+        }
+    }
+
+    // Blue Near position OpMode
+    class BlueNearDrive extends TeleopDriveWithShooterBase {
+        @Override
+        public Pose getStartingPose() {
+            return StartingPositions.BLUE_NEAR;
+        }
+    }
+
+    // Blue Far position OpMode
+    class BlueFarDrive extends TeleopDriveWithShooterBase {
+        @Override
+        public Pose getStartingPose() {
+            return StartingPositions.BLUE_FAR;
+        }
+    }
+}
+
+//package org.firstinspires.ftc.teamcode.OpModes;
+//
+//import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+//import com.pedropathing.opmode.SelectableOpMode;
+//import com.pedropathing.geometry.Pose;
+//import org.firstinspires.ftc.teamcode.pedroPathing.StartingPositions;
+//
+//@TeleOp(name = "Drive With Shooter Menu", group = "Robot")
+//public class TeleopDriveWithShooterMenu extends SelectableOpMode {
+//
+//    public TeleopDriveWithShooterMenu() {
+//        registerOpMode("Red Near", new RedNearDrive());
+//        registerOpMode("Red Far", new RedFarDrive());
+//        registerOpMode("Blue Near", new BlueNearDrive());
+//        registerOpMode("Blue Far", new BlueFarDrive());
+//    }
+//
+//    // Red Near position OpMode
+//    class RedNearDrive extends TeleopDriveWithShooterBase {
+//        @Override
+//        public Pose getStartingPose() {
+//            return StartingPositions.RED_NEAR;
+//        }
+//    }
+//
+//    // Red Far position OpMode
+//    class RedFarDrive extends TeleopDriveWithShooterBase {
+//        @Override
+//        public Pose getStartingPose() {
+//            return StartingPositions.RED_FAR;
+//        }
+//    }
+//
+//    // Blue Near position OpMode
+//    class BlueNearDrive extends TeleopDriveWithShooterBase {
+//        @Override
+//        public Pose getStartingPose() {
+//            return StartingPositions.BLUE_NEAR;
+//        }
+//    }
+//
+//    // Blue Far position OpMode
+//    class BlueFarDrive extends TeleopDriveWithShooterBase {
+//        @Override
+//        public Pose getStartingPose() {
+//            return StartingPositions.BLUE_FAR;
+//        }
+//    }
+//}
