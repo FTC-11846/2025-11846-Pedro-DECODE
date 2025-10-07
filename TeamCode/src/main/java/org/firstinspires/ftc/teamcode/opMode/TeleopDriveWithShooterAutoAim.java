@@ -31,6 +31,8 @@ package org.firstinspires.ftc.teamcode.opMode;
 import static org.firstinspires.ftc.teamcode.pedroPathing.Tuning.draw;
 import static org.firstinspires.ftc.teamcode.pedroPathing.Tuning.follower;
 
+import android.annotation.SuppressLint;
+
 import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.bylazar.telemetry.TelemetryManager;
@@ -78,7 +80,7 @@ public class TeleopDriveWithShooterAutoAim extends OpMode {
         public static double BASELINE_POWER = 0.395;           // Extrapolated starting power
         public static double LINEAR_CORRECTION_FACTOR = 0.0025; // Power increase per inch
         public static double MIN_POWER = 0.5;                  // Minimum shooter power
-        public static double MAX_POWER = 0.85;                 // Maximum shooter power
+        public static double MAX_POWER = 0.9;                 // Maximum shooter power
     }
 
     // Starting position constants inner class
@@ -141,7 +143,6 @@ public class TeleopDriveWithShooterAutoAim extends OpMode {
     public void init() {
         // Initialize Panels Telemetry
         telemetryM = PanelsTelemetry.INSTANCE.getTelemetry();
-
         follower = Constants.createFollower(hardwareMap);
 
         // Initialize shooter hardware
@@ -170,10 +171,10 @@ public class TeleopDriveWithShooterAutoAim extends OpMode {
     public void init_loop() {
         if (!positionSelected) {
             if (gamepad1.dpad_up && gamepadRateLimit.milliseconds() > RATE_LIMIT_MS) {
-                selectedPosition = (selectedPosition + 1) % StartPoseConstants.POSITIONS.length;
+                selectedPosition = (selectedPosition - 1) % StartPoseConstants.POSITIONS.length;
                 gamepadRateLimit.reset();
             } else if (gamepad1.dpad_down && gamepadRateLimit.milliseconds() > RATE_LIMIT_MS) {
-                selectedPosition = (selectedPosition - 1 + StartPoseConstants.POSITIONS.length) % StartPoseConstants.POSITIONS.length;
+                selectedPosition = (selectedPosition + 1 + StartPoseConstants.POSITIONS.length) % StartPoseConstants.POSITIONS.length;
                 gamepadRateLimit.reset();
             }
 
@@ -198,8 +199,13 @@ public class TeleopDriveWithShooterAutoAim extends OpMode {
     public void start() {
         follower.startTeleopDrive();
         follower.update();
+
+        // Test if this fixes display
+        com.bylazar.field.PanelsField.INSTANCE.getField()
+                .setOffsets(com.bylazar.field.PanelsField.INSTANCE.getPresets().getPEDRO_PATHING());
     }
 
+    @SuppressLint("DefaultLocale")
     @Override
     public void loop() {
         // Run shooter logic first to apply power from last loop
@@ -286,7 +292,7 @@ public class TeleopDriveWithShooterAutoAim extends OpMode {
         // === ROBOT STATUS ===
         telemetryM.debug("=== ROBOT STATUS ===");
         telemetryM.debug("Start Position: " + StartPoseConstants.POSITION_NAMES[selectedPosition]);
-        telemetryM.debug("Drive Mode: " + (gamepad1.left_bumper ? "Robot Relative" : "Field Relative"));
+        telemetryM.debug("Drive Mode: " + (gamepad1.left_bumper ? "Field Relative" : "Robot Relative"));
         telemetryM.debug("Robot X: " + String.format("%.1f", follower.getPose().getX()));
         telemetryM.debug("Robot Y: " + String.format("%.1f", follower.getPose().getY()));
         telemetryM.debug("Robot Heading: " + String.format("%.1f", Math.toDegrees(follower.getPose().getHeading())));
