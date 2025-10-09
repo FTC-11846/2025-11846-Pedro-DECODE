@@ -70,17 +70,17 @@ public class TeleopDriveWithShooterAutoAim extends OpMode {
     // Shooter constants inner class
     @Configurable
     public static class ShooterConstants {
-        public static double SHOOTER_LOW_VOLTAGE = 0.5;
-        public static double SHOOTER_HIGH_VOLTAGE = 1.0;
+        public static double SHOOTER_LOW_VELOCITY = 1500; //rpm
+        public static double SHOOTER_HIGH_VELOCITY = 5500; //rpm
         public static double INDEXER_RUNTIME_SECONDS = 0.25;
 
         // Auto-aim ballistic equation parameters
         // Formula: power = BASELINE_POWER + (distance_in_inches * LINEAR_CORRECTION_FACTOR)
         // Based on observed range: 0.5 @ 42in (3.5ft), 0.85 @ 180in (15ft)
         public static double BASELINE_POWER = 0.395;           // Extrapolated starting power
-        public static double LINEAR_CORRECTION_FACTOR = 0.0025; // Power increase per inch
-        public static double MIN_POWER = 0.5;                  // Minimum shooter power
-        public static double MAX_POWER = 0.9;                 // Maximum shooter power
+        public static double LINEAR_CORRECTION_FACTOR = 18; // RPM increase per inch
+        public static double MIN_POWER = 1500;                  // Minimum shooter power
+        public static double MAX_POWER = 5500;                 // Maximum shooter power
     }
 
     // Starting position constants inner class
@@ -131,7 +131,7 @@ public class TeleopDriveWithShooterAutoAim extends OpMode {
     private static final double RATE_LIMIT_MS = 300;
 
     boolean indexOn, rightBumperPressedLast, leftBumperPressedLast, bPressedLast, yPressedLast, checkTimer = false;
-    double shooterVoltage = 0;
+    double shooterVelocity = 0;
 
     // Auto-aim state
     private boolean autoAimActive = false;
@@ -209,7 +209,7 @@ public class TeleopDriveWithShooterAutoAim extends OpMode {
     @Override
     public void loop() {
         // Run shooter logic first to apply power from last loop
-        runShooterVoltage();
+        runShooterVelocity();
 
         // Handle Gamepad 1 (Driving)
         if (gamepad1.left_trigger > 0.5 && gamepad1.right_trigger > 0.5 && gamepad1.a) {
@@ -225,27 +225,27 @@ public class TeleopDriveWithShooterAutoAim extends OpMode {
 
         // Manual high power
         if (gamepad2.right_bumper && !rightBumperPressedLast) {
-            shooterVoltage = ShooterConstants.SHOOTER_HIGH_VOLTAGE;
+            shooterVelocity = ShooterConstants.SHOOTER_HIGH_VELOCITY;
             autoAimActive = false;
         }
         rightBumperPressedLast = gamepad2.right_bumper;
 
         // Manual low power
         if (gamepad2.left_bumper && !leftBumperPressedLast) {
-            shooterVoltage = ShooterConstants.SHOOTER_LOW_VOLTAGE;
+            shooterVelocity = ShooterConstants.SHOOTER_LOW_VELOCITY;
             autoAimActive = false;
         }
         leftBumperPressedLast = gamepad2.left_bumper;
 
         // Stop shooter
         if (gamepad2.b && !bPressedLast) {
-            shooterVoltage = 0;
+            shooterVelocity = 0;
             autoAimActive = false;
         }
         bPressedLast = gamepad2.b;
 
         // AUTO-AIM: Y button triggers AprilTag-based power calculation
-        if (gamepad2.y && !yPressedLast) {
+        if (gamepad2.y) {
             detectGoalAndSetPower();
         }
         yPressedLast = gamepad2.y;
@@ -301,7 +301,7 @@ public class TeleopDriveWithShooterAutoAim extends OpMode {
         // === SHOOTER STATUS ===
         telemetryM.debug("=== SHOOTER STATUS ===");
         telemetryM.debug("Mode: " + (autoAimActive ? "AUTO-AIM" : "Manual"));
-        telemetryM.debug("Target Power: " + String.format("%.2f", shooterVoltage));
+        telemetryM.debug("Target Power: " + String.format("%.2f", shooterVelocity));
         telemetryM.debug("Actual RPM: " + String.format("%.0f", shooterMotor.getVelocity(AngleUnit.DEGREES)/6));
 
         if (autoAimActive) {
@@ -399,7 +399,7 @@ public class TeleopDriveWithShooterAutoAim extends OpMode {
             calculatedPower = Math.max(ShooterConstants.MIN_POWER,
                     Math.min(ShooterConstants.MAX_POWER, calculatedPower));
 
-            shooterVoltage = calculatedPower;
+            shooterVelocity = calculatedPower;
             autoAimActive = true;
 
             lastAutoAimMessage = "SUCCESS - " + getTagFriendlyName(goalTag.id) +
@@ -420,10 +420,10 @@ public class TeleopDriveWithShooterAutoAim extends OpMode {
     }
 
     /**
-     * Apply shooter voltage
+     * Apply shooter Velocity
      */
-    public void runShooterVoltage() {
-        shooterMotor.setPower(shooterVoltage);
+    public void runShooterVelocity() {
+        shooterMotor.setVelocity(shooterVelocity*6,AngleUnit.DEGREES); // RPM supplied, so x6
     }
 
     /**
