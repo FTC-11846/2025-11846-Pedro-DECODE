@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
+import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.vision.VisionPortal;
@@ -11,28 +12,41 @@ import java.util.List;
 /**
  * Vision subsystem for AprilTag detection and goal tracking
  */
-public class VisionSubsystem {
-    // AprilTag IDs
-    public static final int BLUE_GOAL_TAG_ID = 20;
-    public static final int RED_GOAL_TAG_ID = 24;
-    public static final int MOTIF_GPP_TAG_ID = 21;
-    public static final int MOTIF_PGP_TAG_ID = 22;
-    public static final int MOTIF_PPG_TAG_ID = 23;
-
+public class Vision {
     private final VisionPortal visionPortal;
     private final AprilTagProcessor aprilTag;
 
-    public VisionSubsystem(HardwareMap hardwareMap) {
+    // ==================== TUNABLE CONSTANTS ====================
+
+    @Configurable
+    public static class Constants {
+        // AprilTag IDs for DECODE season
+        public static int BLUE_GOAL_TAG_ID = 20;
+        public static int RED_GOAL_TAG_ID = 24;
+        public static int MOTIF_GPP_TAG_ID = 21;
+        public static int MOTIF_PGP_TAG_ID = 22;
+        public static int MOTIF_PPG_TAG_ID = 23;
+
+        // Vision processing
+        public static int DECIMATION = 2;  // Higher = faster but less accurate
+        public static String WEBCAM_NAME = "Webcam 1";
+    }
+
+    // ==================== CONSTRUCTOR ====================
+
+    public Vision(HardwareMap hardwareMap) {
         // Initialize AprilTag processor
         aprilTag = new AprilTagProcessor.Builder().build();
-        aprilTag.setDecimation(2);
+        aprilTag.setDecimation(Constants.DECIMATION);
 
         // Initialize vision portal with webcam
         visionPortal = new VisionPortal.Builder()
-                .setCamera(hardwareMap.get(WebcamName.class, "Webcam 1"))
+                .setCamera(hardwareMap.get(WebcamName.class, Constants.WEBCAM_NAME))
                 .addProcessor(aprilTag)
                 .build();
     }
+
+    // ==================== PUBLIC QUERY METHODS ====================
 
     /**
      * Get all currently detected AprilTags
@@ -47,15 +61,16 @@ public class VisionSubsystem {
      */
     public AprilTagDetection findGoalTag() {
         List<AprilTagDetection> detections = getDetections();
-        
+
         for (AprilTagDetection detection : detections) {
             if (detection.metadata != null) {
-                if (detection.id == BLUE_GOAL_TAG_ID || detection.id == RED_GOAL_TAG_ID) {
+                if (detection.id == Constants.BLUE_GOAL_TAG_ID ||
+                        detection.id == Constants.RED_GOAL_TAG_ID) {
                     return detection;
                 }
             }
         }
-        
+
         return null;
     }
 
@@ -64,13 +79,13 @@ public class VisionSubsystem {
      */
     public AprilTagDetection findMotifTag(int targetId) {
         List<AprilTagDetection> detections = getDetections();
-        
+
         for (AprilTagDetection detection : detections) {
             if (detection.metadata != null && detection.id == targetId) {
                 return detection;
             }
         }
-        
+
         return null;
     }
 
@@ -92,15 +107,41 @@ public class VisionSubsystem {
      * Get friendly name for AprilTag ID
      */
     public static String getTagFriendlyName(int tagId) {
-        switch (tagId) {
-            case BLUE_GOAL_TAG_ID: return "Blue Goal";
-            case RED_GOAL_TAG_ID: return "Red Goal";
-            case MOTIF_GPP_TAG_ID: return "Motif GPP";
-            case MOTIF_PGP_TAG_ID: return "Motif PGP";
-            case MOTIF_PPG_TAG_ID: return "Motif PPG";
-            default: return "Unknown Tag";
+        if (tagId == Constants.BLUE_GOAL_TAG_ID) return "Blue Goal";
+        if (tagId == Constants.RED_GOAL_TAG_ID) return "Red Goal";
+        if (tagId == Constants.MOTIF_GPP_TAG_ID) return "Motif GPP";
+        if (tagId == Constants.MOTIF_PGP_TAG_ID) return "Motif PGP";
+        if (tagId == Constants.MOTIF_PPG_TAG_ID) return "Motif PPG";
+        return "Unknown Tag";
+    }
+
+    /**
+     * Get auto-aim data for the goal
+     * Returns result object with distance, bearing, and success status
+     */
+    public AutoAimResult getAutoAimData() {
+        AprilTagDetection goalTag = findGoalTag();
+
+        if (goalTag == null) {
+            int visibleCount = getDetections().size();
+            return AutoAimResult.failure(
+                    String.format("FAILED - No goal tag detected (%d tags visible)", visibleCount)
+            );
+        }
+
+        return AutoAimResult.success(goalTag);
+    }
+
+    /**
+     * Close the vision portal when done
+     */
+    public void close() {
+        if (visionPortal != null) {
+            visionPortal.close();
         }
     }
+
+    // ==================== RESULT CLASS ====================
 
     /**
      * Result class for auto-aim calculations
@@ -112,8 +153,8 @@ public class VisionSubsystem {
         public final int tagId;
         public final String message;
 
-        public AutoAimResult(boolean success, double distance, double bearing, 
-                           int tagId, String message) {
+        public AutoAimResult(boolean success, double distance, double bearing,
+                             int tagId, String message) {
             this.success = success;
             this.distanceInches = distance;
             this.bearingDegrees = bearing;
@@ -127,43 +168,17 @@ public class VisionSubsystem {
 
         public static AutoAimResult success(AprilTagDetection detection) {
             String message = String.format("SUCCESS - %s @ %.1f in, %.1f deg",
-                VisionSubsystem.getTagFriendlyName(detection.id),
-                detection.ftcPose.range,
-                detection.ftcPose.bearing);
-            
+                    Vision.getTagFriendlyName(detection.id),
+                    detection.ftcPose.range,
+                    detection.ftcPose.bearing);
+
             return new AutoAimResult(
-                true,
-                detection.ftcPose.range,
-                detection.ftcPose.bearing,
-                detection.id,
-                message
+                    true,
+                    detection.ftcPose.range,
+                    detection.ftcPose.bearing,
+                    detection.id,
+                    message
             );
-        }
-    }
-
-    /**
-     * Get auto-aim data for the goal
-     * Returns result object with distance, bearing, and success status
-     */
-    public AutoAimResult getAutoAimData() {
-        AprilTagDetection goalTag = findGoalTag();
-        
-        if (goalTag == null) {
-            int visibleCount = getDetections().size();
-            return AutoAimResult.failure(
-                String.format("FAILED - No goal tag detected (%d tags visible)", visibleCount)
-            );
-        }
-        
-        return AutoAimResult.success(goalTag);
-    }
-
-    /**
-     * Close the vision portal when done
-     */
-    public void close() {
-        if (visionPortal != null) {
-            visionPortal.close();
         }
     }
 }
