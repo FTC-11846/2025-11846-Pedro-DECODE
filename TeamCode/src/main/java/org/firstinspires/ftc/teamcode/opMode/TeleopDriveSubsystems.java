@@ -354,10 +354,16 @@ public class TeleopDriveSubsystems extends OpMode {
 
         if (!detections.isEmpty()) {
             for (AprilTagDetection d : detections) {
-                telemetryM.debug(String.format("  %s: %.1f in, %.1f°",
-                        Vision.getTagFriendlyName(d.id),
-                        d.ftcPose.range,
-                        d.ftcPose.bearing));
+                // Check if pose estimation succeeded before accessing range/bearing
+                if (vision.isValidDetection(d)) {
+                    telemetryM.debug(String.format("  %s: %.1f in, %.1f°",
+                            Vision.getTagFriendlyName(d.id),
+                            d.ftcPose.range,
+                            d.ftcPose.bearing));
+                } else {
+                    // Tag detected but no pose data
+                    telemetryM.debug(String.format("  Tag %d: No pose data", d.id));
+                }
             }
         }
         telemetryM.debug("");

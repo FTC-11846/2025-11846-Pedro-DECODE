@@ -57,13 +57,14 @@ public class Vision {
 
     /**
      * Find the goal AprilTag (Blue or Red)
-     * Returns null if no goal tag is visible
+     * Returns null if no goal tag is visible OR pose estimation failed
      */
     public AprilTagDetection findGoalTag() {
         List<AprilTagDetection> detections = getDetections();
 
         for (AprilTagDetection detection : detections) {
-            if (detection.metadata != null) {
+            // Check metadata AND ftcPose are not null
+            if (detection.metadata != null && detection.ftcPose != null) {
                 if (detection.id == Constants.BLUE_GOAL_TAG_ID ||
                         detection.id == Constants.RED_GOAL_TAG_ID) {
                     return detection;
@@ -76,24 +77,19 @@ public class Vision {
 
     /**
      * Find a specific motif pattern tag
+     * Returns null if tag not visible OR pose estimation failed
      */
     public AprilTagDetection findMotifTag(int targetId) {
         List<AprilTagDetection> detections = getDetections();
 
         for (AprilTagDetection detection : detections) {
-            if (detection.metadata != null && detection.id == targetId) {
+            // Check both metadata AND ftcPose are not null
+            if (detection.metadata != null && detection.ftcPose != null && detection.id == targetId) {
                 return detection;
             }
         }
 
         return null;
-    }
-
-    /**
-     * Check if any AprilTags are currently visible
-     */
-    public boolean hasDetections() {
-        return !getDetections().isEmpty();
     }
 
     /**
@@ -139,6 +135,13 @@ public class Vision {
         if (visionPortal != null) {
             visionPortal.close();
         }
+    }
+
+    /**
+     * Check if an AprilTag detection is valid (has pose data)
+     */
+    public boolean isValidDetection(AprilTagDetection detection) {
+        return detection != null && detection.metadata != null && detection.ftcPose != null;
     }
 
     // ==================== RESULT CLASS ====================
