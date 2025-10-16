@@ -6,19 +6,22 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.teamcode.robots.CharacterStats;
+import org.firstinspires.ftc.teamcode.robots.CharacterStats.BallFeedMode;
+
 /**
- * Ball feeding subsystem - handles single, dual synchronized, or dual independent motors
- * Automatically adapts to robot configuration via MainCharacter
+ * Ball feeding subsystem - now uses CharacterStats for configuration
+ * Automatically adapts to robot configuration via CharacterStats
  */
 public class BallFeed {
-    private final MainCharacter character;
-    private final MainCharacter.BallFeedMode mode;
+    private final CharacterStats stats;
+    private final BallFeedMode mode;
     private final CRServo motorL;
     private final CRServo motorR; // null for single motor mode
 
     private final ElapsedTime feedTimer = new ElapsedTime();
     private boolean isFeeding = false;
-    private double feedDurationSeconds = Constants.DEFAULT_FEED_DURATION;
+    private double feedDurationSeconds;
 
     // ==================== TUNABLE CONSTANTS ====================
 
@@ -35,15 +38,26 @@ public class BallFeed {
 
     // ==================== CONSTRUCTOR ====================
 
+    /**
+     * Create BallFeed using MainCharacter enum (backward compatible)
+     */
     public BallFeed(HardwareMap hardwareMap, MainCharacter character) {
-        this.character = character;
-        this.mode = character.getBallFeedMode();
+        this(hardwareMap, character.getAbilities());
+    }
+
+    /**
+     * Create BallFeed using CharacterStats directly (preferred)
+     */
+    public BallFeed(HardwareMap hardwareMap, CharacterStats stats) {
+        this.stats = stats;
+        this.mode = stats.getBallFeedMode();
+        this.feedDurationSeconds = stats.getDefaultFeedDuration();
 
         // Initialize motors based on mode
         switch (mode) {
             case SINGLE:
                 // Only left motor
-                motorL = hardwareMap.get(CRServo.class, character.getBallFeedMotorLName());
+                motorL = hardwareMap.get(CRServo.class, stats.getBallFeedMotorLName());
                 motorL.setDirection(DcMotorSimple.Direction.REVERSE);
                 motorR = null;
                 break;
@@ -51,8 +65,8 @@ public class BallFeed {
             case DUAL_SYNCHRONIZED:
             case DUAL_INDEPENDENT:
                 // Both motors
-                motorL = hardwareMap.get(CRServo.class, character.getBallFeedMotorLName());
-                motorR = hardwareMap.get(CRServo.class, character.getBallFeedMotorRName());
+                motorL = hardwareMap.get(CRServo.class, stats.getBallFeedMotorLName());
+                motorR = hardwareMap.get(CRServo.class, stats.getBallFeedMotorRName());
                 motorL.setDirection(DcMotorSimple.Direction.REVERSE);
                 motorR.setDirection(DcMotorSimple.Direction.FORWARD);
                 break;
@@ -124,7 +138,7 @@ public class BallFeed {
      * Only works in DUAL_INDEPENDENT mode
      */
     public void setIndependentPowers(double leftPower, double rightPower) {
-        if (mode != MainCharacter.BallFeedMode.DUAL_INDEPENDENT) {
+        if (mode != BallFeedMode.DUAL_INDEPENDENT) {
             throw new IllegalStateException("Independent power control only available in DUAL_INDEPENDENT mode");
         }
         setMotorPowers(leftPower, rightPower);
@@ -161,15 +175,19 @@ public class BallFeed {
         return feedDurationSeconds;
     }
 
-    public MainCharacter.BallFeedMode getMode() {
+    public BallFeedMode getMode() {
         return mode;
+    }
+
+    public String getRobotName() {
+        return stats.getDisplayName();
     }
 
     // ==================== PRIVATE HELPER METHODS ====================
 
     private void setMotorPowers(double leftPower, double rightPower) {
         // Apply multipliers if in independent mode
-        if (mode == MainCharacter.BallFeedMode.DUAL_INDEPENDENT) {
+        if (mode == BallFeedMode.DUAL_INDEPENDENT) {
             leftPower *= Constants.LEFT_POWER_MULTIPLIER;
             rightPower *= Constants.RIGHT_POWER_MULTIPLIER;
         }

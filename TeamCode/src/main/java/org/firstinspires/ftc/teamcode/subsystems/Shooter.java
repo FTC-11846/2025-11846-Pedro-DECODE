@@ -7,12 +7,14 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 
+import org.firstinspires.ftc.teamcode.robots.CharacterStats;
+
 /**
- * Shooter subsystem - handles both single and dual motor configurations
- * Automatically adapts to different hardware via MainCharacter config
+ * Shooter subsystem - now uses CharacterStats for configuration
+ * Automatically adapts to different hardware via CharacterStats
  */
 public class Shooter {
-    private final MainCharacter character;
+    private final CharacterStats stats;
     private final DcMotorEx shooterMotorL;
     private final DcMotorEx shooterMotorR; // null for single motor robots
     private final VoltageSensor batteryVoltageSensor;
@@ -26,26 +28,14 @@ public class Shooter {
 
     @Configurable
     public static class Constants {
-        // Velocity presets (RPM)
-        public static double LOW_VELOCITY_RPM = 1500;
-        public static double HIGH_VELOCITY_RPM_TEST = 5500;
-        public static double HIGH_VELOCITY_RPM_22154 = 4000;
-        public static double HIGH_VELOCITY_RPM_11846 = 5500;
-
-        // Power limits
+        // Power limits (universal for all robots)
         public static double MIN_POWER_RPM = 1500;
         public static double MAX_POWER_RPM = 5500;
 
-        // Auto-aim ballistics (distance-based velocity calculation)
-        public static double BASELINE_POWER_TEST = 395.0;
-        public static double BASELINE_POWER_22154 = 2000.0;
-        public static double BASELINE_POWER_11846 = 395.0;
+        // Auto-aim ballistics
         public static double LINEAR_CORRECTION_FACTOR = 18.0; // RPM per inch
 
-        // PIDF Tuning
-        public static double PIDF_P_TEST = 10.0;
-        public static double PIDF_P_22154 = 20.0;
-        public static double PIDF_P_11846 = 10.0;
+        // PIDF Tuning (universal values, overridden by CharacterStats)
         public static double PIDF_I = 0.0;
         public static double PIDF_D = 0.0;
 
@@ -62,12 +52,22 @@ public class Shooter {
 
     // ==================== CONSTRUCTOR ====================
 
+    /**
+     * Create shooter using MainCharacter enum (backward compatible)
+     */
     public Shooter(HardwareMap hardwareMap, MainCharacter character) {
-        this.character = character;
+        this(hardwareMap, character.getAbilities());
+    }
+
+    /**
+     * Create shooter using CharacterStats directly (preferred)
+     */
+    public Shooter(HardwareMap hardwareMap, CharacterStats stats) {
+        this.stats = stats;
         this.batteryVoltageSensor = hardwareMap.voltageSensor.iterator().next();
 
         // Initialize left/primary motor (all robots have this)
-        shooterMotorL = hardwareMap.get(DcMotorEx.class, character.getShooterMotorLName());
+        shooterMotorL = hardwareMap.get(DcMotorEx.class, stats.getShooterMotorLName());
         shooterMotorL.setDirection(DcMotorSimple.Direction.REVERSE);
 
         if (Constants.DEBUG_RUN_WITHOUT_ENCODER) {
@@ -77,8 +77,8 @@ public class Shooter {
         }
 
         // Initialize right motor only if robot has dual shooters
-        if (character.hasDualShooters()) {
-            shooterMotorR = hardwareMap.get(DcMotorEx.class, character.getShooterMotorRName());
+        if (stats.hasDualShooters()) {
+            shooterMotorR = hardwareMap.get(DcMotorEx.class, stats.getShooterMotorRName());
             shooterMotorR.setDirection(DcMotorSimple.Direction.FORWARD);
 
             if (Constants.DEBUG_RUN_WITHOUT_ENCODER) {
@@ -94,29 +94,18 @@ public class Shooter {
     // ==================== PUBLIC CONTROL METHODS ====================
 
     /**
-     * Set shooter to low velocity (configured per robot)
+     * Set shooter to low velocity (configured per robot in CharacterStats)
      */
     public void setLowVelocity() {
-        targetVelocityRPM = Constants.LOW_VELOCITY_RPM;
+        targetVelocityRPM = stats.getLowVelocityRPM();
         autoAimActive = false;
     }
 
     /**
-     * Set shooter to high velocity (configured per robot)
+     * Set shooter to high velocity (configured per robot in CharacterStats)
      */
     public void setHighVelocity() {
-        switch (character) {
-            case ROBOT_22154:
-                targetVelocityRPM = Constants.HIGH_VELOCITY_RPM_22154;
-                break;
-            case ROBOT_11846:
-                targetVelocityRPM = Constants.HIGH_VELOCITY_RPM_11846;
-                break;
-            case TEST_BOT:
-            default:
-                targetVelocityRPM = Constants.HIGH_VELOCITY_RPM_TEST;
-                break;
-        }
+        targetVelocityRPM = stats.getHighVelocityRPM();
         autoAimActive = false;
     }
 
@@ -138,10 +127,10 @@ public class Shooter {
 
     /**
      * Calculate and set velocity based on distance to target
-     * Uses robot-specific ballistic constants
+     * Uses robot-specific ballistic constants from CharacterStats
      */
     public void setAutoAimVelocity(double distanceInches, int tagId) {
-        double baseline = getBaselinePower();
+        double baseline = stats.getBaselinePower();
         double calculatedRPM = baseline + (distanceInches * Constants.LINEAR_CORRECTION_FACTOR);
 
         targetVelocityRPM = clampVelocity(calculatedRPM);
@@ -166,7 +155,7 @@ public class Shooter {
         // Normal velocity control with voltage-scaled PIDF
         double voltage = batteryVoltageSensor.getVoltage();
         double scaledF = calculateScaledF(voltage);
-        double p = getPIDFP();
+        double p = stats.getShooterPIDFP(); // Get P from CharacterStats
 
         // Apply PIDF coefficients
         shooterMotorL.setVelocityPIDFCoefficients(p, Constants.PIDF_I, Constants.PIDF_D, scaledF);
@@ -214,6 +203,10 @@ public class Shooter {
         return lastDetectedTagId;
     }
 
+    public String getRobotName() {
+        return stats.getDisplayName();
+    }
+
     // ==================== EMERGENCY STOP ====================
 
     /**
@@ -232,24 +225,6 @@ public class Shooter {
 
     private double clampVelocity(double rpm) {
         return Math.max(Constants.MIN_POWER_RPM, Math.min(Constants.MAX_POWER_RPM, rpm));
-    }
-
-    private double getBaselinePower() {
-        switch (character) {
-            case ROBOT_22154: return Constants.BASELINE_POWER_22154;
-            case ROBOT_11846: return Constants.BASELINE_POWER_11846;
-            case TEST_BOT:
-            default: return Constants.BASELINE_POWER_TEST;
-        }
-    }
-
-    private double getPIDFP() {
-        switch (character) {
-            case ROBOT_22154: return Constants.PIDF_P_22154;
-            case ROBOT_11846: return Constants.PIDF_P_11846;
-            case TEST_BOT:
-            default: return Constants.PIDF_P_TEST;
-        }
     }
 
     private double calculateScaledF(double voltage) {

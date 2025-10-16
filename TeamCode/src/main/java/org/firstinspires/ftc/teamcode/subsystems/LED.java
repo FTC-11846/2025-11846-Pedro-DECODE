@@ -4,17 +4,20 @@ import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 
+import org.firstinspires.ftc.teamcode.robots.CharacterStats;
+
 /**
  * LED subsystem for RGB indicator lights (GoBilda PWM-controlled LEDs)
- * Only available on robots with LED hardware (e.g., Robot 22154)
+ * Now uses CharacterStats for configuration
+ * Only available on robots with LED hardware
  */
 public class LED {
-    private final MainCharacter character;
+    private final CharacterStats stats;
     private final Servo ledL;
     private final Servo ledR;
-    
+
     // ==================== TUNABLE CONSTANTS ====================
-    
+
     @Configurable
     public static class Constants {
         // GoBilda RGB LED PWM positions
@@ -30,15 +33,25 @@ public class LED {
 
     // ==================== CONSTRUCTOR ====================
 
+    /**
+     * Create LED using MainCharacter enum (backward compatible)
+     */
     public LED(HardwareMap hardwareMap, MainCharacter character) {
-        this.character = character;
-        
-        if (!character.hasLEDSystem()) {
-            throw new IllegalStateException(character + " does not have LED system!");
+        this(hardwareMap, character.getAbilities());
+    }
+
+    /**
+     * Create LED using CharacterStats directly (preferred)
+     */
+    public LED(HardwareMap hardwareMap, CharacterStats stats) {
+        this.stats = stats;
+
+        if (!stats.hasLEDSystem()) {
+            throw new IllegalStateException(stats.getDisplayName() + " does not have LED system!");
         }
-        
-        ledL = hardwareMap.get(Servo.class, character.getLEDServoLName());
-        ledR = hardwareMap.get(Servo.class, character.getLEDServoRName());
+
+        ledL = hardwareMap.get(Servo.class, stats.getLEDServoLName());
+        ledR = hardwareMap.get(Servo.class, stats.getLEDServoRName());
     }
 
     // ==================== PUBLIC CONTROL METHODS ====================
@@ -105,5 +118,9 @@ public class LED {
 
     public double getCurrentRightPosition() {
         return ledR.getPosition();
+    }
+
+    public String getRobotName() {
+        return stats.getDisplayName();
     }
 }

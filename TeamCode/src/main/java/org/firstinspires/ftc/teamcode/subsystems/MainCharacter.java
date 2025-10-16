@@ -1,121 +1,133 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
+import org.firstinspires.ftc.teamcode.robots.CharacterStats;
+import org.firstinspires.ftc.teamcode.robots.Robot11846Abilities;
+import org.firstinspires.ftc.teamcode.robots.Robot22154Abilities;
+import org.firstinspires.ftc.teamcode.robots.TestBotAbilities;
+
 /**
- * Main Character configuration - defines hardware and behavior for each robot
- * "Main Character Energy" - because every robot deserves to be the star! 🌟
+ * MainCharacter - Enum wrapper for robot selection
+ * Each robot returns its CharacterStats implementation
+ *
+ * "Main Character Energy" - Every robot deserves to be the star! 🌟
  */
 public enum MainCharacter {
-    TEST_BOT,
-    ROBOT_22154,
-    ROBOT_11846;
+    TEST_BOT(new TestBotAbilities()),
+    ROBOT_22154(new Robot22154Abilities()),
+    ROBOT_11846(new Robot11846Abilities());
 
     // This will be set during init_loop via driver station selection
     public static MainCharacter ACTIVE_ROBOT = TEST_BOT;
 
-    // ==================== HARDWARE CONFIGURATION ====================
+    // Each robot has its own CharacterStats implementation
+    private final CharacterStats abilities;
 
-    public String getShooterMotorLName() {
-        switch (this) {
-            case ROBOT_22154: return "launchMotorL";
-            case TEST_BOT:
-            case ROBOT_11846:
-            default: return "launchMotor";
-        }
+    MainCharacter(CharacterStats abilities) {
+        this.abilities = abilities;
     }
 
-    public String getShooterMotorRName() {
-        return (this == ROBOT_22154) ? "launchMotorR" : null;
+    /**
+     * Get the CharacterStats for this robot
+     * This is the main way to access robot configuration!
+     */
+    public CharacterStats getAbilities() {
+        return abilities;
     }
 
-    public boolean hasDualShooters() {
-        return this == ROBOT_22154;
-    }
-
-    // Ball Feed configuration
-    public String getBallFeedMotorLName() {
-        return "feedServoL";
-    }
-
-    public String getBallFeedMotorRName() {
-        return "feedServoR";
-    }
-
-    public BallFeedMode getBallFeedMode() {
-        // All robots currently use dual synchronized
-        // Can be changed per robot as needed
-        return BallFeedMode.DUAL_SYNCHRONIZED;
-    }
-
-    // LED configuration
-    public boolean hasLEDSystem() {
-        return this == ROBOT_22154;
-    }
-
-    public String getLEDServoLName() {
-        return (this == ROBOT_22154) ? "ballColorLEDL" : null;
-    }
-
-    public String getLEDServoRName() {
-        return (this == ROBOT_22154) ? "ballColorLEDR" : null;
-    }
-
-    // Other mechanisms
-    public boolean hasFoldingMechanism() {
-        return this == ROBOT_11846;
-    }
-
-    public boolean hasLifters() {
-        return this == ROBOT_22154;
-    }
-
-    public String getLifterMotorLName() {
-        return (this == ROBOT_22154) ? "liftMotorL" : null;
-    }
-
-    public String getLifterMotorRName() {
-        return (this == ROBOT_22154) ? "liftMotorR" : null;
-    }
-
-    // ==================== STARTING POSES ====================
-
-    public com.pedropathing.geometry.Pose getDefaultStartPose() {
-        switch (this) {
-            case ROBOT_22154:
-                return new com.pedropathing.geometry.Pose(56, 8, Math.toRadians(270));
-            case ROBOT_11846:
-                return new com.pedropathing.geometry.Pose(56, 8, Math.toRadians(0));
-            case TEST_BOT:
-            default:
-                return new com.pedropathing.geometry.Pose(56, 8, Math.toRadians(0));
-        }
-    }
-
-    // ==================== ENUMS ====================
-
-    public enum BallFeedMode {
-        SINGLE,              // One motor only
-        DUAL_SYNCHRONIZED,   // Two motors, same power
-        DUAL_INDEPENDENT     // Two motors, can control separately (future)
-    }
-
-    // ==================== UTILITY METHODS ====================
+    // ==================== CONVENIENCE METHODS ====================
+    // These delegate to the CharacterStats implementation
 
     @Override
     public String toString() {
-        switch (this) {
-            case TEST_BOT: return "TestBot";
-            case ROBOT_22154: return "Robot 22154";
-            case ROBOT_11846: return "Robot 11846";
-            default: return "Unknown";
-        }
+        return abilities.getDisplayName();
     }
 
     public String getShortName() {
-        switch (this) {
-            case TEST_BOT: return "TB";
-            case ROBOT_22154: return "22154";
-            case ROBOT_11846: return "11846";
-            default: return "???";
-        }
+        return abilities.getShortName();
+    }
+
+    // ==================== DEPRECATED METHODS ====================
+    // These are kept for backward compatibility during migration
+    // They simply delegate to CharacterStats
+    // TODO: Remove these after updating all subsystems
+
+    @Deprecated
+    public String getShooterMotorLName() {
+        return abilities.getShooterMotorLName();
+    }
+
+    @Deprecated
+    public String getShooterMotorRName() {
+        return abilities.getShooterMotorRName();
+    }
+
+    @Deprecated
+    public boolean hasDualShooters() {
+        return abilities.hasDualShooters();
+    }
+
+    @Deprecated
+    public String getBallFeedMotorLName() {
+        return abilities.getBallFeedMotorLName();
+    }
+
+    @Deprecated
+    public String getBallFeedMotorRName() {
+        return abilities.getBallFeedMotorRName();
+    }
+
+    @Deprecated
+    public CharacterStats.BallFeedMode getBallFeedMode() {
+        return abilities.getBallFeedMode();
+    }
+
+    @Deprecated
+    public boolean hasLEDSystem() {
+        return abilities.hasLEDSystem();
+    }
+
+    @Deprecated
+    public String getLEDServoLName() {
+        return abilities.getLEDServoLName();
+    }
+
+    @Deprecated
+    public String getLEDServoRName() {
+        return abilities.getLEDServoRName();
+    }
+
+    @Deprecated
+    public boolean hasFoldingMechanism() {
+        return abilities.hasFoldingMechanism();
+    }
+
+    @Deprecated
+    public boolean hasLifters() {
+        return abilities.hasLifters();
+    }
+
+    @Deprecated
+    public String getLifterMotorLName() {
+        return abilities.getLifterMotorLName();
+    }
+
+    @Deprecated
+    public String getLifterMotorRName() {
+        return abilities.getLifterMotorRName();
+    }
+
+    @Deprecated
+    public com.pedropathing.geometry.Pose getDefaultStartPose() {
+        return abilities.getDefaultStartPose();
+    }
+
+    // ==================== ENUMS ====================
+    // Keep the enum here for compatibility, but use CharacterStats.BallFeedMode
+
+    @Deprecated
+    public enum BallFeedMode {
+        SINGLE,
+        DUAL_SYNCHRONIZED,
+        DUAL_INDEPENDENT
     }
 }
