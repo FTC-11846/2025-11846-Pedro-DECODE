@@ -10,8 +10,12 @@ import com.qualcomm.robotcore.hardware.VoltageSensor;
 import org.firstinspires.ftc.teamcode.robots.CharacterStats;
 
 /**
- * Shooter subsystem - now uses CharacterStats for configuration
+ * Shooter subsystem with auto-aim heading control constants
  * Automatically adapts to different hardware via CharacterStats
+ *
+ * Commit 2 additions:
+ * - AutoAimConstants for heading control
+ * - TAG_LOSS_TIMEOUT for brief AprilTag loss tolerance
  */
 public class Shooter {
     private final CharacterStats stats;
@@ -23,6 +27,9 @@ public class Shooter {
     private boolean autoAimActive = false;
     private double lastDetectedDistance = 0;
     private int lastDetectedTagId = -1;
+
+    // ADDED: Field to store the raw velocity reading for debug
+    private double lastRawVelocityTicksPerSec = 0; //
 
     // ==================== TUNABLE CONSTANTS ====================
 
@@ -46,6 +53,27 @@ public class Shooter {
         // Debug mode
         public static boolean DEBUG_RUN_WITHOUT_ENCODER = false;
         public static double DEBUG_POWER = 1.0;
+    }
+
+    @Configurable
+    public static class AutoAimConstants {
+        // Heading control tuning
+        public static double HEADING_P_GAIN = 0.03;
+        public static double MAX_TRACKING_ROTATION = 0.3;
+        public static double HEADING_DEADBAND_DEG = 2.0;
+
+        // Timing
+        public static double SINGLE_SHOT_DURATION = 0.5; // seconds
+        public static double AUTO_AIM_SPIN_DOWN_TIME = 5.0; // seconds
+
+        // Driver override
+        public static double OVERRIDE_THRESHOLD = 0.15; // 15% stick deflection
+
+        // AprilTag loss tolerance - NEW for Commit 2
+        public static double TAG_LOSS_TIMEOUT = 1.0; // seconds - continue tracking if tag briefly lost
+
+        // Future enhancement (post-competition):
+        // Use localization pose to calculate bearing when tag lost
     }
 
     private static final double TICKS_TO_RPM = 28.0 / 60.0;
@@ -169,6 +197,8 @@ public class Shooter {
             shooterMotorR.setVelocityPIDFCoefficients(p, Constants.PIDF_I, Constants.PIDF_D, scaledF);
             shooterMotorR.setVelocity(targetTicksPerSec);
         }
+        // ADDED: Update the velocity field *after* setting the target velocity
+        lastRawVelocityTicksPerSec = shooterMotorL.getVelocity(); //
     }
 
     // ==================== GETTERS (FOR TELEMETRY) ====================
@@ -176,8 +206,37 @@ public class Shooter {
     /**
      * Get current actual velocity in RPM (average if dual motors)
      */
+
+    /**
+     * Returns the raw motor encoder position (ticks) for debugging.
+     * This is the most basic encoder reading.
+     */
+    public int getRawPositionTicks() {
+        return shooterMotorL.getCurrentPosition();
+    }
+
+    /**
+     * Gets the current commanded motor power (0.0 to 1.0 or -1.0)
+     * This is the power set by setPower() or derived from setVelocity().
+     * Only set up for ShooterL, as this is considered a temp Debug feature
+     */
+    public double getShooterLPower() {
+        return shooterMotorL.getPower();
+    }
+
+    /**
+     * Debug Data, get current operating mode of the shooter motor (e.g., RUN_USING_ENCODER).
+     */
+    public DcMotor.RunMode getShooterLRunMode() {
+        return shooterMotorL.getMode();
+    }
+
+    public double getRawVelocity() {
+        // CHANGED: Return the stored value from periodic()
+        return lastRawVelocityTicksPerSec; //
+    }
     public double getActualVelocityRPM() {
-        double velocityL = shooterMotorL.getVelocity() / TICKS_TO_RPM;
+        double velocityL = lastRawVelocityTicksPerSec / TICKS_TO_RPM;
 
         if (shooterMotorR != null) {
             double velocityR = shooterMotorR.getVelocity() / TICKS_TO_RPM;
