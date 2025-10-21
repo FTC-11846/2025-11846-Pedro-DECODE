@@ -315,16 +315,27 @@ public class TeleopDriveSubsystems extends OpMode {
     // ==================== BALL FEED CONTROLS ====================
 
     private void handleBallFeedControls() {
-        // Right Trigger: Feed ball
-        if (gamepad2.right_trigger > 0.5 && gamepadRateLimit.milliseconds() > RATE_LIMIT_MS) {
-            ballFeed.startFeed();
-            gamepadRateLimit.reset();
+        // Check if robot has dual-independent ball feed
+        if (character == MainCharacter.ROBOT_22154 || character == MainCharacter.ROBOT_11846) {
+            // Dual-independent control
+            double leftPower = gamepad2.left_trigger;
+            double rightPower = gamepad2.right_trigger;
+
+            if (leftPower > 0.1 || rightPower > 0.1) {
+                // For 22154: CRServo - continuous feed while held
+                // For 11846: Sweep servo - timed feed triggered by threshold
+                ballFeed.setIndependentPowers(leftPower, rightPower);
+            } else {
+                ballFeed.stopFeed();
+            }
+        } else {
+            // Single control for TestBot - Right trigger only, timed feed
+            if (gamepad2.right_trigger > 0.5 && gamepadRateLimit.milliseconds() > RATE_LIMIT_MS) {
+                ballFeed.startFeed();
+                gamepadRateLimit.reset();
+            }
         }
-
-        // Future: Left Trigger for dual ball feed control
-        // if (gamepad2.left_trigger > 0.5) { ... }
     }
-
     // ==================== AUTO-AIM TRACKING ====================
 
     /**
@@ -451,7 +462,7 @@ public class TeleopDriveSubsystems extends OpMode {
     }
 
     /**
-     * Handle single-shot tracking timeout and auto-aim spin-down
+     * Handle single-shot tracking timeout
      */
     private void handleTrackingTimeout() {
         // Single-shot mode auto-disable after duration
@@ -462,8 +473,7 @@ public class TeleopDriveSubsystems extends OpMode {
             lastAutoAimMessage = "Single-shot complete";
         }
 
-        // Auto-aim velocity spin-down after timeout DELETED, drive should manually stop Shooter
-
+        // Auto-aim spindown deleted, driver will manually stop Shooter
     }
 
     // ==================== TELEMETRY ====================
@@ -513,13 +523,6 @@ public class TeleopDriveSubsystems extends OpMode {
 
         telemetryM.debug(String.format("Target: %.0f RPM", shooter.getTargetVelocityRPM()));
         telemetryM.debug(String.format("Actual: %.0f RPM", shooter.getActualVelocityRPM()));
-//        telemetryM.debug(String.format("RawLoop: %.0f RPM", shooter.getRawVelocity()/(28.0/60.0)));
-//        telemetryM.debug( shooter.getRawVelocity());
-        telemetryM.addData("Raw Ticks/Sec (Debug)", shooter.getRawVelocity());
-        telemetryM.addData("RawTicksPos:", shooter.getRawPositionTicks());
-        // NEW: Diagnostic Lines
-//        telemetryM.addData("Motor RunMode", shooter.getShooterLRunMode());
-        telemetryM.addData("Motor Commanded Power", String.format("%.2f", shooter.getShooterLPower()));
 
         if (shooter.isAutoAimActive()) {
             telemetryM.debug(String.format("Distance: %.1fin to Tag %d",
@@ -540,14 +543,20 @@ public class TeleopDriveSubsystems extends OpMode {
         }
         telemetryM.debug("");
 
-        // === CONTROLS REMINDER ===
+// === CONTROLS REMINDER ===
         telemetryM.debug("=== CONTROLS (GP2) ===");
         telemetryM.debug("Y: Single-shot auto-aim");
         telemetryM.debug("LBump: Toggle tracking");
         telemetryM.debug("DPad L/R: Low/High velocity");
-        telemetryM.debug("RTrig: Feed ball");
-        telemetryM.debug("B: Stop all");
 
+// Ball feed controls vary by robot
+        if (character == MainCharacter.ROBOT_22154 || character == MainCharacter.ROBOT_11846) {
+            telemetryM.debug("LT/RT: Feed left/right");
+        } else {
+            telemetryM.debug("RTrig: Feed ball");
+        }
+
+        telemetryM.debug("B: Stop all");
         telemetryM.update(telemetry);
     }
 

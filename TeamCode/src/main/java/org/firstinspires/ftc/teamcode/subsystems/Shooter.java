@@ -64,7 +64,6 @@ public class Shooter {
 
         // Timing
         public static double SINGLE_SHOT_DURATION = 0.5; // seconds
-        public static double AUTO_AIM_SPIN_DOWN_TIME = 5.0; // seconds
 
         // Driver override
         public static double OVERRIDE_THRESHOLD = 0.15; // 15% stick deflection

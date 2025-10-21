@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
 import com.bylazar.configurables.annotations.Configurable;
+import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.vision.VisionPortal;
@@ -11,6 +12,9 @@ import java.util.List;
 
 /**
  * Vision subsystem for AprilTag detection and goal tracking
+ *
+ * Commit 2 additions:
+ * - GoalPositions class for pose-based tracking fallback
  */
 public class Vision {
     private final VisionPortal visionPortal;
@@ -30,6 +34,31 @@ public class Vision {
         // Vision processing
         public static int DECIMATION = 2;  // Higher = faster but less accurate
         public static String WEBCAM_NAME = "Webcam 1";
+    }
+
+    @Configurable
+    public static class GoalPositions {
+        // Field coordinates for goals (Pedro Pathing frame, inches)
+        // TODO: Measure and adjust these to actual field positions
+        public static double BLUE_GOAL_X = 10.0;
+        public static double BLUE_GOAL_Y = 72.0;
+        public static double RED_GOAL_X = 134.0;
+        public static double RED_GOAL_Y = 72.0;
+
+        /**
+         * Get the goal pose for the selected starting position
+         * Positions 0,1 = Red side → Red goal
+         * Positions 2,3 = Blue side → Blue goal
+         */
+        public static Pose getGoalForStartPosition(int positionIndex) {
+            if (positionIndex < 2) {
+                // Red Near or Red Far → Red goal
+                return new Pose(RED_GOAL_X, RED_GOAL_Y, 0);
+            } else {
+                // Blue Near or Blue Far → Blue goal
+                return new Pose(BLUE_GOAL_X, BLUE_GOAL_Y, 0);
+            }
+        }
     }
 
     // ==================== CONSTRUCTOR ====================
