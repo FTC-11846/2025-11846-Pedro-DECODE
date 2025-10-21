@@ -26,10 +26,15 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import java.util.List;
 
 /**
- * Main Character Energy TeleOp - Universal OpMode for all robots! 🌟
- * Uses subsystem architecture with runtime robot selection
+ * TeleOp with Commit 2 features:
+ * - Runtime robot selection
+ * - Single-shot auto-aim (Y button)
+ * - Toggle continuous tracking (Left Bumper GP2)
+ * - AprilTag loss tolerance with timeout
+ *
+ * Future: Localization pose fallback when tag lost (post-competition)
  */
-@TeleOp(name = "Main Character TeleOp", group = "Competition")
+@TeleOp(name = "TeleOp - Subsystems", group = "Competition")
 public class TeleopDriveSubsystems extends OpMode {
 
     // ==================== SUBSYSTEMS ====================
@@ -37,16 +42,15 @@ public class TeleopDriveSubsystems extends OpMode {
     private Shooter shooter;
     private BallFeed ballFeed;
     private Vision vision;
-    private LED led; // null if robot doesn't have LEDs
+    private LED led; // Only initialized if robot has LED hardware
 
-    // Robot configuration - selected during init_loop
+    // ==================== CONFIGURATION ====================
+
     private MainCharacter character;
-
-    // Drive system
     private IMU imu;
     private TelemetryManager telemetryM;
 
-    // ==================== STARTING POSITION SELECTION ====================
+    // ==================== STARTING POSITION ====================
 
     @Configurable
     public static class StartPoseConstants {
@@ -55,33 +59,35 @@ public class TeleopDriveSubsystems extends OpMode {
         public static Pose BLUE_NEAR = new Pose(86, 8, Math.toRadians(180));
         public static Pose BLUE_FAR = new Pose(86, 136, Math.toRadians(180));
 
-        private static final String[] POSITION_NAMES = {
-                "Red Near", "Red Far", "Blue Near", "Blue Far"
-        };
-        private static final Pose[] POSITIONS = {
-                RED_NEAR, RED_FAR, BLUE_NEAR, BLUE_FAR
-        };
+        private static final String[] POSITION_NAMES = {"Red Near", "Red Far", "Blue Near", "Blue Far"};
+        private static final Pose[] POSITIONS = {RED_NEAR, RED_FAR, BLUE_NEAR, BLUE_FAR};
     }
 
-    // Selection state
-    private enum InitState {
-        SELECT_ROBOT,
-        SELECT_POSITION,
-        READY
-    }
+    // ==================== SELECTION STATE ====================
 
-    private InitState initState = InitState.SELECT_ROBOT;
     private int selectedRobotIndex = 0;
-    private int selectedPositionIndex = 0;
-    private final MainCharacter[] robots = MainCharacter.values();
+    private boolean robotSelected = false;
 
-    // Button state tracking
-    private boolean rightBumperLast = false;
+    private int selectedPosition = 0;
+    private boolean positionSelected = false;
+
+    // ==================== TRACKING STATE ====================
+
+    private boolean trackingEnabled = false;
+    private ElapsedTime trackingTimer = new ElapsedTime();
+    private boolean singleShotMode = false;
+
+    // AprilTag loss tolerance
+    private ElapsedTime tagLossTimer = new ElapsedTime();
+    private Vision.AutoAimResult lastValidResult = null;
+
+    // ==================== BUTTON STATE ====================
+
     private boolean leftBumperLast = false;
-    private boolean bButtonLast = false;
+    private boolean dpadLeftLast = false;
+    private boolean dpadRightLast = false;
     private boolean yButtonLast = false;
-    private boolean xButtonLast = false;
-    private boolean aButtonLast = false;
+    private boolean bButtonLast = false;
 
     private ElapsedTime gamepadRateLimit = new ElapsedTime();
     private static final double RATE_LIMIT_MS = 300;
@@ -103,97 +109,81 @@ public class TeleopDriveSubsystems extends OpMode {
         );
         imu.initialize(new IMU.Parameters(orientationOnRobot));
 
-        telemetryM.debug("=== MAIN CHARACTER ENERGY ===");
-        telemetryM.debug("Ready for configuration!");
+        telemetryM.debug("=== INITIALIZATION ===");
+        telemetryM.debug("Waiting for robot selection...");
         telemetryM.update(telemetry);
     }
 
     @Override
     public void init_loop() {
-        switch (initState) {
-            case SELECT_ROBOT:
-                handleRobotSelection();
-                break;
-            case SELECT_POSITION:
-                handlePositionSelection();
-                break;
-            case READY:
-                displayReadyMessage();
-                break;
-        }
-    }
+        // Stage 1: Robot Selection
+        if (!robotSelected) {
+            if (gamepad1.dpad_up && gamepadRateLimit.milliseconds() > RATE_LIMIT_MS) {
+                selectedRobotIndex = (selectedRobotIndex - 1 + MainCharacter.values().length)
+                        % MainCharacter.values().length;
+                gamepadRateLimit.reset();
+            } else if (gamepad1.dpad_down && gamepadRateLimit.milliseconds() > RATE_LIMIT_MS) {
+                selectedRobotIndex = (selectedRobotIndex + 1) % MainCharacter.values().length;
+                gamepadRateLimit.reset();
+            }
 
-    private void handleRobotSelection() {
-        // DPAD navigation
-        if (gamepad1.dpad_up && gamepadRateLimit.milliseconds() > RATE_LIMIT_MS) {
-            selectedRobotIndex = (selectedRobotIndex - 1 + robots.length) % robots.length;
-            gamepadRateLimit.reset();
-        } else if (gamepad1.dpad_down && gamepadRateLimit.milliseconds() > RATE_LIMIT_MS) {
-            selectedRobotIndex = (selectedRobotIndex + 1) % robots.length;
-            gamepadRateLimit.reset();
-        }
+            if (gamepad1.a) {
+                character = MainCharacter.values()[selectedRobotIndex];
+                MainCharacter.ACTIVE_ROBOT = character;
+                robotSelected = true;
 
-        // A to confirm robot selection
-        if (gamepad1.a && !aButtonLast) {
-            character = robots[selectedRobotIndex];
-            MainCharacter.ACTIVE_ROBOT = character; // Set global active robot
+                // Initialize subsystems after robot selection
+                initializeSubsystems();
+            }
 
-            // Initialize subsystems now that we know which robot
-            initializeSubsystems();
-
-            // Move to position selection
-            initState = InitState.SELECT_POSITION;
-            gamepadRateLimit.reset();
-        }
-        aButtonLast = gamepad1.a;
-
-        // Display
-        telemetryM.debug("=== SELECT YOUR ROBOT ===");
-        telemetryM.debug("Use DPAD UP/DOWN, Press A to confirm");
-        telemetryM.debug("");
-        for (int i = 0; i < robots.length; i++) {
-            String marker = (i == selectedRobotIndex) ? " >>> " : "     ";
-            telemetryM.debug(marker + robots[i].toString());
-        }
-        telemetryM.update(telemetry);
-    }
-
-    private void handlePositionSelection() {
-        // DPAD navigation
-        if (gamepad1.dpad_up && gamepadRateLimit.milliseconds() > RATE_LIMIT_MS) {
-            selectedPositionIndex = (selectedPositionIndex - 1 + StartPoseConstants.POSITIONS.length)
-                    % StartPoseConstants.POSITIONS.length;
-            gamepadRateLimit.reset();
-        } else if (gamepad1.dpad_down && gamepadRateLimit.milliseconds() > RATE_LIMIT_MS) {
-            selectedPositionIndex = (selectedPositionIndex + 1) % StartPoseConstants.POSITIONS.length;
-            gamepadRateLimit.reset();
+            telemetryM.debug("=== SELECT ROBOT ===");
+            telemetryM.debug("Use DPAD UP/DOWN, Press A to confirm");
+            telemetryM.debug("");
+            for (int i = 0; i < MainCharacter.values().length; i++) {
+                String marker = (i == selectedRobotIndex) ? " >>> " : "     ";
+                telemetryM.debug(marker + MainCharacter.values()[i].toString());
+            }
+            telemetryM.update(telemetry);
+            return;
         }
 
-        // A to confirm position
-        if (gamepad1.a && !aButtonLast) {
-            Pose startPose = StartPoseConstants.POSITIONS[selectedPositionIndex];
-            follower.setPose(startPose);
-            initState = InitState.READY;
-            gamepadRateLimit.reset();
-        }
-        aButtonLast = gamepad1.a;
+        // Stage 2: Position Selection
+        if (!positionSelected) {
+            if (gamepad1.dpad_up && gamepadRateLimit.milliseconds() > RATE_LIMIT_MS) {
+                selectedPosition = (selectedPosition - 1 + StartPoseConstants.POSITIONS.length)
+                        % StartPoseConstants.POSITIONS.length;
+                gamepadRateLimit.reset();
+            } else if (gamepad1.dpad_down && gamepadRateLimit.milliseconds() > RATE_LIMIT_MS) {
+                selectedPosition = (selectedPosition + 1) % StartPoseConstants.POSITIONS.length;
+                gamepadRateLimit.reset();
+            }
 
-        // Display
-        telemetryM.debug("=== SELECT STARTING POSITION ===");
-        telemetryM.debug("Robot: " + character.toString());
-        telemetryM.debug("Use DPAD UP/DOWN, Press A to confirm");
-        telemetryM.debug("");
-        for (int i = 0; i < StartPoseConstants.POSITION_NAMES.length; i++) {
-            String marker = (i == selectedPositionIndex) ? " >>> " : "     ";
-            telemetryM.debug(marker + StartPoseConstants.POSITION_NAMES[i]);
+            if (gamepad1.a) {
+                Pose startPose = StartPoseConstants.POSITIONS[selectedPosition];
+                positionSelected = true;
+                follower.setPose(startPose);
+            }
+
+            telemetryM.debug("=== SELECT STARTING POSITION ===");
+            telemetryM.debug("Robot: " + character.toString());
+            telemetryM.debug("Use DPAD UP/DOWN, Press A to confirm");
+            telemetryM.debug("");
+            for (int i = 0; i < StartPoseConstants.POSITION_NAMES.length; i++) {
+                String marker = (i == selectedPosition) ? " >>> " : "     ";
+                telemetryM.debug(marker + StartPoseConstants.POSITION_NAMES[i]);
+            }
+            telemetryM.update(telemetry);
+            return;
         }
-        telemetryM.update(telemetry);
+
+        // Stage 3: Ready to start
+        displayReadyMessage();
     }
 
     private void displayReadyMessage() {
         telemetryM.debug("=== READY TO START ===");
         telemetryM.debug("Robot: " + character.toString());
-        telemetryM.debug("Position: " + StartPoseConstants.POSITION_NAMES[selectedPositionIndex]);
+        telemetryM.debug("Position: " + StartPoseConstants.POSITION_NAMES[selectedPosition]);
         telemetryM.debug("");
         telemetryM.debug("Press START to begin TeleOp");
         telemetryM.update(telemetry);
@@ -219,7 +209,7 @@ public class TeleopDriveSubsystems extends OpMode {
         follower.startTeleopDrive();
         follower.update();
 
-        // Set coordinate system offsets for field visualization
+        // Set coordinate system offsets
         com.bylazar.field.PanelsField.INSTANCE.getField()
                 .setOffsets(com.bylazar.field.PanelsField.INSTANCE.getPresets().getPEDRO_PATHING());
     }
@@ -233,13 +223,15 @@ public class TeleopDriveSubsystems extends OpMode {
         shooter.periodic();
         ballFeed.periodic();
 
-        // === GAMEPAD 1: DRIVING & LED ===
+        // === GAMEPAD 1: DRIVING ===
         handleDriving();
-        handleLED();
 
         // === GAMEPAD 2: SHOOTER AND BALL FEED ===
         handleShooterControls();
         handleBallFeedControls();
+
+        // === TRACKING AUTO-DISABLE ===
+        handleTrackingTimeout();
 
         // === UPDATE FOLLOWER ===
         follower.update();
@@ -249,87 +241,239 @@ public class TeleopDriveSubsystems extends OpMode {
         draw();
     }
 
-    // ==================== CONTROL HANDLERS ====================
+    // ==================== DRIVING ====================
 
     private void handleDriving() {
-        // Reset IMU: both triggers + A
+        // Reset IMU if both triggers + A pressed
         if (gamepad1.left_trigger > 0.5 && gamepad1.right_trigger > 0.5 && gamepad1.a) {
             imu.resetYaw();
         }
 
-        // Robot-relative when A is held, field-relative otherwise
-        boolean fieldRelative = !gamepad1.a;
+        // Check for driver override on rotation
+        if (trackingEnabled && Math.abs(gamepad1.right_stick_x) > Shooter.AutoAimConstants.OVERRIDE_THRESHOLD) {
+            trackingEnabled = false;
+            singleShotMode = false;
+            lastValidResult = null;
+            lastAutoAimMessage = "Tracking override - driver control";
+        }
+
+        // Calculate rotation input
+        double rotationInput;
+        if (trackingEnabled) {
+            rotationInput = calculateTrackingRotation();
+        } else {
+            rotationInput = -gamepad1.right_stick_x;
+        }
+
+        // Field-relative vs robot-relative
+        boolean fieldRelative = !gamepad1.left_bumper;
         follower.setTeleOpDrive(
                 -gamepad1.left_stick_y,
                 -gamepad1.left_stick_x,
-                -gamepad1.right_stick_x,
+                rotationInput,
                 fieldRelative
         );
     }
 
-    private void handleLED() {
-        if (led == null) return; // Skip if robot doesn't have LEDs
-
-        // Left bumper: Green
-        if (gamepad1.left_bumper && !leftBumperLast) {
-            led.setGreen();
-        }
-        leftBumperLast = gamepad1.left_bumper;
-
-        // Right bumper: Purple
-        if (gamepad1.right_bumper && !rightBumperLast) {
-            led.setPurple();
-        }
-        rightBumperLast = gamepad1.right_bumper;
-    }
+    // ==================== SHOOTER CONTROLS ====================
 
     private void handleShooterControls() {
-        // Right bumper: High velocity
-        if (gamepad2.right_bumper) {
+        // DPAD Right: High velocity
+        if (gamepad2.dpad_right && !dpadRightLast) {
             shooter.setHighVelocity();
         }
+        dpadRightLast = gamepad2.dpad_right;
 
-        // Left bumper: Low velocity
-        if (gamepad2.left_bumper) {
+        // DPAD Left: Low velocity
+        if (gamepad2.dpad_left && !dpadLeftLast) {
             shooter.setLowVelocity();
         }
+        dpadLeftLast = gamepad2.dpad_left;
 
-        // B button: Stop shooter
+        // B button: Stop shooter AND tracking
         if (gamepad2.b && !bButtonLast) {
             shooter.stop();
+            trackingEnabled = false;
+            singleShotMode = false;
+            lastValidResult = null;
         }
         bButtonLast = gamepad2.b;
 
-        // Y button: Auto-aim
+        // Y button: Single-shot auto-aim (brief tracking burst)
         if (gamepad2.y && !yButtonLast) {
-            performAutoAim();
+            performSingleShotAutoAim();
         }
         yButtonLast = gamepad2.y;
+
+        // Left Bumper: Toggle continuous tracking
+        if (gamepad2.left_bumper && !leftBumperLast) {
+            toggleTracking();
+        }
+        leftBumperLast = gamepad2.left_bumper;
     }
+
+    // ==================== BALL FEED CONTROLS ====================
 
     private void handleBallFeedControls() {
-        // X button: Feed ball
-        if (gamepad2.x && gamepadRateLimit.milliseconds() > RATE_LIMIT_MS) {
-            ballFeed.startFeed();
-            gamepadRateLimit.reset();
-        }
+        // Check if robot has dual-independent ball feed
+        if (character == MainCharacter.ROBOT_22154 || character == MainCharacter.ROBOT_11846) {
+            // Dual-independent control
+            double leftPower = gamepad2.left_trigger;
+            double rightPower = gamepad2.right_trigger;
 
-        // A button: Reverse (unjam)
-        if (gamepad2.a && gamepadRateLimit.milliseconds() > RATE_LIMIT_MS) {
-            ballFeed.startReverse();
-            gamepadRateLimit.reset();
+            if (leftPower > 0.1 || rightPower > 0.1) {
+                // For 22154: CRServo - continuous feed while held
+                // For 11846: Sweep servo - timed feed triggered by threshold
+                ballFeed.setIndependentPowers(leftPower, rightPower);
+            } else {
+                ballFeed.stopFeed();
+            }
+        } else {
+            // Single control for TestBot - Right trigger only, timed feed
+            if (gamepad2.right_trigger > 0.5 && gamepadRateLimit.milliseconds() > RATE_LIMIT_MS) {
+                ballFeed.startFeed();
+                gamepadRateLimit.reset();
+            }
+        }
+    }
+    // ==================== AUTO-AIM TRACKING ====================
+
+    /**
+     * Calculate rotation power to track goal using P controller
+     * Features AprilTag loss tolerance - continues tracking with last known bearing
+     * for TAG_LOSS_TIMEOUT seconds before giving up
+     *
+     * Future enhancement: Use localization pose to calculate bearing when tag lost
+     */
+    private double calculateTrackingRotation() {
+        if (!trackingEnabled) return 0;
+
+        Vision.AutoAimResult result = vision.getAutoAimData();
+
+        if (result.success) {
+            // Tag visible - reset timer and cache result
+            tagLossTimer.reset();
+            lastValidResult = result;
+
+            // Update shooter velocity while tracking
+            shooter.setAutoAimVelocity(result.distanceInches, result.tagId);
+
+            // Calculate heading error (bearing is in degrees)
+            double headingError = result.bearingDegrees;
+
+            // Check if within deadband
+            if (Math.abs(headingError) < Shooter.AutoAimConstants.HEADING_DEADBAND_DEG) {
+                return 0; // Close enough, no correction needed
+            }
+
+            // P controller
+            double correction = headingError * Shooter.AutoAimConstants.HEADING_P_GAIN;
+
+            // Clamp to max rotation speed
+            correction = Math.max(-Shooter.AutoAimConstants.MAX_TRACKING_ROTATION,
+                    Math.min(Shooter.AutoAimConstants.MAX_TRACKING_ROTATION, correction));
+
+            return correction;
+        } else {
+            // Tag lost - check timeout
+            if (tagLossTimer.seconds() > Shooter.AutoAimConstants.TAG_LOSS_TIMEOUT) {
+                // Lost for too long - disable tracking
+                trackingEnabled = false;
+                singleShotMode = false;
+                lastAutoAimMessage = "Tracking lost - tag timeout";
+                lastValidResult = null;
+                return 0;
+            } else {
+                // Brief loss - continue with last known bearing
+                if (lastValidResult != null) {
+                    lastAutoAimMessage = String.format("Tag lost - using cached (%.1fs)",
+                            tagLossTimer.seconds());
+
+                    // TODO (post-competition): Calculate bearing from localization pose
+                    // instead of using cached bearing. This will handle robot movement
+                    // during tag loss more accurately.
+
+                    // Use cached bearing for heading correction
+                    double headingError = lastValidResult.bearingDegrees;
+
+                    if (Math.abs(headingError) < Shooter.AutoAimConstants.HEADING_DEADBAND_DEG) {
+                        return 0;
+                    }
+
+                    double correction = headingError * Shooter.AutoAimConstants.HEADING_P_GAIN;
+                    correction = Math.max(-Shooter.AutoAimConstants.MAX_TRACKING_ROTATION,
+                            Math.min(Shooter.AutoAimConstants.MAX_TRACKING_ROTATION, correction));
+
+                    return correction;
+                } else {
+                    // No cached data - disable
+                    trackingEnabled = false;
+                    singleShotMode = false;
+                    lastAutoAimMessage = "Tracking lost - no cached data";
+                    return 0;
+                }
+            }
         }
     }
 
-    private void performAutoAim() {
+    /**
+     * Single-shot auto-aim: Enable tracking for brief duration
+     */
+    private void performSingleShotAutoAim() {
         Vision.AutoAimResult result = vision.getAutoAimData();
 
         if (result.success) {
             shooter.setAutoAimVelocity(result.distanceInches, result.tagId);
-            lastAutoAimMessage = result.message;
+            trackingEnabled = true;
+            singleShotMode = true;
+            trackingTimer.reset();
+            tagLossTimer.reset();
+            lastValidResult = result;
+            lastAutoAimMessage = result.message + " - Single-shot tracking";
         } else {
             lastAutoAimMessage = result.message;
         }
+    }
+
+    /**
+     * Toggle continuous tracking mode
+     */
+    private void toggleTracking() {
+        if (!trackingEnabled) {
+            // Enable tracking
+            Vision.AutoAimResult result = vision.getAutoAimData();
+            if (result.success) {
+                shooter.setAutoAimVelocity(result.distanceInches, result.tagId);
+                trackingEnabled = true;
+                singleShotMode = false;
+                tagLossTimer.reset();
+                lastValidResult = result;
+                lastAutoAimMessage = "TRACKING ENABLED - " + result.message;
+            } else {
+                lastAutoAimMessage = "Cannot track - " + result.message;
+            }
+        } else {
+            // Disable tracking
+            trackingEnabled = false;
+            singleShotMode = false;
+            lastValidResult = null;
+            lastAutoAimMessage = "Tracking disabled";
+        }
+    }
+
+    /**
+     * Handle single-shot tracking timeout
+     */
+    private void handleTrackingTimeout() {
+        // Single-shot mode auto-disable after duration
+        if (singleShotMode && trackingTimer.seconds() >= Shooter.AutoAimConstants.SINGLE_SHOT_DURATION) {
+            trackingEnabled = false;
+            singleShotMode = false;
+            lastValidResult = null;
+            lastAutoAimMessage = "Single-shot complete";
+        }
+
+        // Auto-aim spindown deleted, driver will manually stop Shooter
     }
 
     // ==================== TELEMETRY ====================
@@ -337,45 +481,51 @@ public class TeleopDriveSubsystems extends OpMode {
     private void displayTelemetry() {
         List<AprilTagDetection> detections = vision.getDetections();
 
-        // === ROBOT INFO ===
-        telemetryM.debug("=== MAIN CHARACTER: " + character.toString() + " ===");
-        telemetryM.debug("Position: " + StartPoseConstants.POSITION_NAMES[selectedPositionIndex]);
-        telemetryM.debug("Drive Mode: " + (gamepad1.a ? "Robot-Relative" : "Field-Relative"));
-        telemetryM.debug(String.format("Pose: X=%.1f Y=%.1f H=%.1f°",
-                follower.getPose().getX(),
-                follower.getPose().getY(),
-                Math.toDegrees(follower.getPose().getHeading())));
-        telemetryM.debug("");
-
         // === APRILTAG VISION ===
-        telemetryM.debug("=== VISION ===");
+        telemetryM.debug("=== APRILTAG VISION ===");
         telemetryM.debug("Camera: " + vision.getCameraState());
         telemetryM.debug("Tags: " + detections.size());
 
         if (!detections.isEmpty()) {
             for (AprilTagDetection d : detections) {
-                // Check if pose estimation succeeded before accessing range/bearing
                 if (vision.isValidDetection(d)) {
-                    telemetryM.debug(String.format("  %s: %.1f in, %.1f°",
+                    telemetryM.debug(String.format("  %s: %.1fin, %.1fdeg",
                             Vision.getTagFriendlyName(d.id),
                             d.ftcPose.range,
                             d.ftcPose.bearing));
-                } else {
-                    // Tag detected but no pose data
-                    telemetryM.debug(String.format("  Tag %d: No pose data", d.id));
                 }
             }
         }
         telemetryM.debug("");
 
+        // === ROBOT STATUS ===
+        telemetryM.debug("=== ROBOT STATUS ===");
+        telemetryM.debug("Robot: " + character.toString());
+        telemetryM.debug("Position: " + StartPoseConstants.POSITION_NAMES[selectedPosition]);
+        telemetryM.debug(String.format("Pose: X=%.1f Y=%.1f H=%.1f",
+                follower.getPose().getX(),
+                follower.getPose().getY(),
+                Math.toDegrees(follower.getPose().getHeading())));
+        telemetryM.debug("");
+
         // === SHOOTER STATUS ===
         telemetryM.debug("=== SHOOTER ===");
-        telemetryM.debug("Mode: " + (shooter.isAutoAimActive() ? "AUTO-AIM" : "Manual"));
+
+        if (trackingEnabled) {
+            telemetryM.debug("Mode: " + (singleShotMode ? "SINGLE-SHOT TRACKING" : "CONTINUOUS TRACKING"));
+            if (singleShotMode) {
+                double remaining = Shooter.AutoAimConstants.SINGLE_SHOT_DURATION - trackingTimer.seconds();
+                telemetryM.debug(String.format("Time Left: %.2fs", Math.max(0, remaining)));
+            }
+        } else {
+            telemetryM.debug("Mode: Manual");
+        }
+
         telemetryM.debug(String.format("Target: %.0f RPM", shooter.getTargetVelocityRPM()));
         telemetryM.debug(String.format("Actual: %.0f RPM", shooter.getActualVelocityRPM()));
 
         if (shooter.isAutoAimActive()) {
-            telemetryM.debug(String.format("Auto-Aim: %.1f in to Tag %d",
+            telemetryM.debug(String.format("Distance: %.1fin to Tag %d",
                     shooter.getLastDetectedDistance(),
                     shooter.getLastDetectedTagId()));
         }
@@ -387,32 +537,38 @@ public class TeleopDriveSubsystems extends OpMode {
 
         // === BALL FEED STATUS ===
         telemetryM.debug("=== BALL FEED ===");
-        telemetryM.debug("Mode: " + ballFeed.getMode());
-        telemetryM.debug("Active: " + (ballFeed.isFeeding() ? "YES" : "NO"));
+        telemetryM.debug("Feeding: " + (ballFeed.isFeeding() ? "YES" : "NO"));
         if (ballFeed.isFeeding()) {
             telemetryM.debug(String.format("Time Left: %.2fs", ballFeed.getRemainingFeedTime()));
         }
         telemetryM.debug("");
 
-        // === LED STATUS (if equipped) ===
-        if (led != null) {
-            telemetryM.debug("=== LED ===");
-            telemetryM.debug("Left Bumper: Green");
-            telemetryM.debug("Right Bumper: Purple");
+// === CONTROLS REMINDER ===
+        telemetryM.debug("=== CONTROLS (GP2) ===");
+        telemetryM.debug("Y: Single-shot auto-aim");
+        telemetryM.debug("LBump: Toggle tracking");
+        telemetryM.debug("DPad L/R: Low/High velocity");
+
+// Ball feed controls vary by robot
+        if (character == MainCharacter.ROBOT_22154 || character == MainCharacter.ROBOT_11846) {
+            telemetryM.debug("LT/RT: Feed left/right");
+        } else {
+            telemetryM.debug("RTrig: Feed ball");
         }
 
+        telemetryM.debug("B: Stop all");
         telemetryM.update(telemetry);
     }
 
-    // ==================== STOP ====================
+    // ==================== SHUTDOWN ====================
 
     @Override
     public void stop() {
         shooter.emergencyStop();
         ballFeed.stopFeed();
         vision.close();
-        if (led != null) {
-            led.turnOff();
-        }
+        trackingEnabled = false;
+        singleShotMode = false;
+        lastValidResult = null;
     }
 }

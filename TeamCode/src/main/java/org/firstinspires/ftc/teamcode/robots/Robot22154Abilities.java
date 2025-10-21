@@ -93,9 +93,8 @@ public class Robot22154Abilities extends CharacterStats {
 
     @Override
     public BallFeedMode getBallFeedMode() {
-        return BallFeedMode.DUAL_SYNCHRONIZED;
+        return BallFeedMode.DUAL_INDEPENDENT;  // Change from DUAL_SYNCHRONIZED
     }
-
     @Override
     public double getDefaultFeedDuration() {
         return BallFeedConstants.FEED_DURATION;

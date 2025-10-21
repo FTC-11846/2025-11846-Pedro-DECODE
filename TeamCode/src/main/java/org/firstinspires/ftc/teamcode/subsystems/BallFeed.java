@@ -139,10 +139,14 @@ public class BallFeed {
      */
     public void setIndependentPowers(double leftPower, double rightPower) {
         if (mode != BallFeedMode.DUAL_INDEPENDENT) {
-            throw new IllegalStateException("Independent power control only available in DUAL_INDEPENDENT mode");
+            // Just apply synchronized power for non-independent modes
+            setMotorPowers(leftPower, leftPower);
+        } else {
+            // Apply independent powers for 22154
+            setMotorPowers(leftPower, rightPower);
         }
-        setMotorPowers(leftPower, rightPower);
         isFeeding = (leftPower != 0 || rightPower != 0);
+        // Don't use timer for continuous CRServo control
     }
 
     /**
