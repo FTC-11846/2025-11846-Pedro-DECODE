@@ -17,17 +17,24 @@ import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.subsystems.Vision;
 import org.firstinspires.ftc.teamcode.util.Alliance;
 import org.firstinspires.ftc.teamcode.util.FieldMirror;
+import org.firstinspires.ftc.teamcode.util.RobotState;
 import org.firstinspires.ftc.teamcode.util.StartingPosition;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 
 /**
- * BaseCompetitionOpMode - Abstract base class for all competition OpModes
+ * BaseOpMode - Abstract base class for all competition OpModes
  * 
  * Provides:
  * - Progressive selection UI (Robot → Alliance → Position → Ready)
+ * - State restoration from previous OpMode (Auto → TeleOp)
  * - Common subsystem initialization
  * - Relocalization utilities
  * - Emergency stop coordination
+ * 
+ * Hardware Init Timing:
+ * - IMU initialized in init() (required early)
+ * - Subsystems initialized AFTER position selected (prevents wrong robot crash)
+ * - Follower created in start() (after all selections confirmed)
  * 
  * Child classes (TeleOp, Autonomous) extend this and override hooks
  */
@@ -48,6 +55,9 @@ public abstract class BaseOpMode extends OpMode {
     private int selectedRobotIndex = 0;
     private int selectedAllianceIndex = 0;
     private int selectedPositionIndex = 0;
+    
+    // Flag to track if hardware initialized
+    private boolean hardwareInitialized = false;
     
     // ==================== CONFIRMED SELECTIONS ====================
     
@@ -79,7 +89,7 @@ public abstract class BaseOpMode extends OpMode {
     public final void init() {
         telemetryM = PanelsTelemetry.INSTANCE.getTelemetry();
         
-        // Initialize hardware that doesn't depend on robot selection
+        // Initialize IMU early (needed for follower later)
         imu = hardwareMap.get(IMU.class, "imu");
         RevHubOrientationOnRobot orientation = new RevHubOrientationOnRobot(
             RevHubOrientationOnRobot.LogoFacingDirection.RIGHT,
@@ -87,11 +97,31 @@ public abstract class BaseOpMode extends OpMode {
         );
         imu.initialize(new IMU.Parameters(orientation));
         
+        // Check if we have saved state from previous OpMode (Auto → TeleOp)
+        if (RobotState.hasState()) {
+            // Restore from saved state
+            character = RobotState.activeRobot;
+            alliance = RobotState.activeAlliance;
+            MainCharacter.ACTIVE_ROBOT = character;
+            
+            // Initialize hardware with restored robot
+            initializeSubsystems();
+            
+            // Skip to position selection (alliance already known)
+            currentStage = InitStage.SELECT_POSITION;
+            selectedAllianceIndex = alliance == Alliance.RED ? 0 : 1;
+            
+            telemetryM.debug("=== STATE RESTORED ===");
+            telemetryM.debug(RobotState.getStateString());
+        } else {
+            // Normal init - start from robot selection
+            telemetryM.debug("=== INITIALIZATION ===");
+            telemetryM.debug("Waiting for robot selection...");
+        }
+        
         // Child class can override for additional init
         onInitialize();
         
-        telemetryM.debug("=== INITIALIZATION COMPLETE ===");
-        telemetryM.debug("Waiting for robot selection...");
         telemetryM.update(telemetry);
     }
     
@@ -119,7 +149,15 @@ public abstract class BaseOpMode extends OpMode {
     public final void start() {
         // Create follower with selected starting pose
         follower = Constants.createFollower(hardwareMap);
-        Pose startPose = getStartingPose();
+        
+        // Set starting pose (restore from state or use selection)
+        Pose startPose;
+        if (RobotState.hasState() && RobotState.lastKnownPose != null) {
+            startPose = RobotState.lastKnownPose;
+            RobotState.clearState();  // Clear after use
+        } else {
+            startPose = getStartingPose();
+        }
         follower.setPose(startPose);
         
         // Set coordinate system offsets for Panels field view
@@ -160,8 +198,8 @@ public abstract class BaseOpMode extends OpMode {
             MainCharacter.ACTIVE_ROBOT = character;
             currentStage = InitStage.SELECT_ALLIANCE;
             
-            // Initialize subsystems now that we know the robot
-            initializeSubsystems();
+            // NOTE: DO NOT initialize subsystems yet!
+            // Wait until position selected (user has 2 more chances to go back)
         }
         aButtonLast = gamepad1.a;
         
@@ -189,7 +227,6 @@ public abstract class BaseOpMode extends OpMode {
         // B to go back
         if (gamepad1.b && !bButtonLast) {
             currentStage = InitStage.SELECT_ROBOT;
-            // Don't destroy subsystems, just let user reselect
         }
         
         aButtonLast = gamepad1.a;
@@ -214,6 +251,12 @@ public abstract class BaseOpMode extends OpMode {
         if (gamepad1.a && !aButtonLast) {
             position = StartingPosition.values()[selectedPositionIndex];
             currentStage = InitStage.READY;
+            
+            // NOW initialize hardware (user confirmed all selections)
+            if (!hardwareInitialized) {
+                initializeSubsystems();
+                hardwareInitialized = true;
+            }
         }
         
         // B to go back
@@ -265,6 +308,7 @@ public abstract class BaseOpMode extends OpMode {
     /**
      * Get the starting pose based on selected alliance and position
      * Uses FieldMirror to handle alliance-specific mirroring
+     * Returns PEDRO COORDINATES
      */
     protected Pose getStartingPose() {
         Pose bluePose = position.getBluePose();
@@ -322,7 +366,7 @@ public abstract class BaseOpMode extends OpMode {
         // For now, just return current pose (no correction)
         // 
         // Proper implementation needs:
-        // 1. Tag ID → known field position mapping
+        // 1. Tag ID → known field position mapping (PEDRO COORDINATES!)
         // 2. Transform from camera to robot center
         // 3. Calculate robot pose from tag relative position
         //
@@ -380,7 +424,7 @@ public abstract class BaseOpMode extends OpMode {
         telemetryM.debug("");
         
         Pose startPose = getStartingPose();
-        telemetryM.debug(String.format("Start Pose: X=%.1f Y=%.1f H=%.1f°",
+        telemetryM.debug(String.format("Start Pose (Pedro): X=%.1f Y=%.1f H=%.1f°",
             startPose.getX(), 
             startPose.getY(), 
             Math.toDegrees(startPose.getHeading())));

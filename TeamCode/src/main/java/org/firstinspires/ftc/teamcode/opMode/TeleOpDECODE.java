@@ -86,13 +86,13 @@ public class TeleOpDECODE extends BaseOpMode {
         
         // === TRACKING AUTO-DISABLE ===
         handleTrackingTimeout();
-        
+
         // === UPDATE FOLLOWER ===
         follower.update();
-        
+
         // === TELEMETRY ===
         displayTelemetry();
-        draw();
+        if (follower != null) { draw(); }   // Guard draw() call - follower initialized in start(), not init()
     }
     
     // ==================== DRIVING CONTROL ====================
