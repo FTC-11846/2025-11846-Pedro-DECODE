@@ -1,14 +1,47 @@
 package org.firstinspires.ftc.teamcode.robots;
 
+import com.bylazar.configurables.annotations.Configurable;
 import com.pedropathing.geometry.Pose;
 
 /**
- * CharacterStats - Abstract base class defining all robot configuration methods
- * Each robot extends this class and overrides methods for their specific hardware
+ * CharacterStats - Abstract base class with robot-specific configuration
+ * 
+ * The nested config classes below hold tuning values for the currently active robot.
+ * Values are populated by calling applyConfiguration() after robot selection.
  * 
  * "Main Character Energy" - Every robot is unique! 🌟
  */
+@Configurable
 public abstract class CharacterStats {
+    
+    // ==================== CONFIGURATION OBJECTS ====================
+    
+    public static RobotIdentity _00_robotIdentity = new RobotIdentity();
+    public static ShooterConfig shooterConfig = new ShooterConfig();
+    public static BallFeedConfig ballFeedConfig = new BallFeedConfig();
+    public static StartPoseConfig startPoseConfig = new StartPoseConfig();
+    
+    // ==================== NESTED CONFIG CLASSES ====================
+    
+    public static class RobotIdentity {
+        public String REMINDER = "⚠️ Robot-specific values - set in [RobotName]Abilities class ⚠️";
+        public String activeRobot = "NOT_SET";
+    }
+    
+    public static class ShooterConfig {
+        public double highVelocityRPM = 0;
+        public double lowVelocityRPM = 0;
+        public double baselinePower = 0;
+        public double pidfP = 0;
+    }
+    
+    public static class BallFeedConfig {
+        public double feedDuration = 0.25;
+    }
+    
+    public static class StartPoseConfig {
+        public double defaultHeadingDeg = 0;
+    }
     
     // ==================== IDENTITY ====================
     
@@ -45,23 +78,35 @@ public abstract class CharacterStats {
     
     /**
      * Get high velocity RPM for this robot's shooter
+     * Reads from shared config populated by applyConfiguration()
      */
-    public abstract double getHighVelocityRPM();
+    public double getHighVelocityRPM() {
+        return shooterConfig.highVelocityRPM;
+    }
     
     /**
      * Get low velocity RPM for this robot's shooter
+     * Reads from shared config populated by applyConfiguration()
      */
-    public abstract double getLowVelocityRPM();
+    public double getLowVelocityRPM() {
+        return shooterConfig.lowVelocityRPM;
+    }
     
     /**
      * Get auto-aim baseline power for this robot
+     * Reads from shared config populated by applyConfiguration()
      */
-    public abstract double getBaselinePower();
+    public double getBaselinePower() {
+        return shooterConfig.baselinePower;
+    }
     
     /**
      * Get PIDF P coefficient for shooter velocity control
+     * Reads from shared config populated by applyConfiguration()
      */
-    public abstract double getShooterPIDFP();
+    public double getShooterPIDFP() {
+        return shooterConfig.pidfP;
+    }
     
     // ==================== BALL FEED CONFIGURATION ====================
     
@@ -82,9 +127,10 @@ public abstract class CharacterStats {
     
     /**
      * Get default feed duration in seconds
+     * Reads from shared config populated by applyConfiguration()
      */
     public double getDefaultFeedDuration() {
-        return 0.25; // Most robots use this default
+        return ballFeedConfig.feedDuration;
     }
     
     // ==================== LED CONFIGURATION ====================
@@ -161,7 +207,7 @@ public abstract class CharacterStats {
      * Override if robot has a different preferred heading
      */
     public Pose getDefaultStartPose() {
-        return new Pose(56, 8, Math.toRadians(0));
+        return new Pose(56, 8, Math.toRadians(startPoseConfig.defaultHeadingDeg));
     }
     
     /**
@@ -194,10 +240,22 @@ public abstract class CharacterStats {
     
     /**
      * Get default heading for this robot (in radians)
+     * Reads from shared config populated by applyConfiguration()
      */
     protected double getDefaultHeading() {
-        return Math.toRadians(0);
+        return Math.toRadians(startPoseConfig.defaultHeadingDeg);
     }
+    
+    // ==================== CONFIGURATION APPLICATION ====================
+    
+    /**
+     * Apply this robot's configuration values to the shared config objects.
+     * Called after robot selection in init_loop.
+     * 
+     * Child classes implement this to copy their specific values into
+     * the static config objects above.
+     */
+    public abstract void applyConfiguration();
     
     // ==================== ENUMS ====================
     

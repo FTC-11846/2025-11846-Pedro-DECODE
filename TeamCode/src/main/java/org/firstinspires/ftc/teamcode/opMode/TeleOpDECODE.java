@@ -17,7 +17,7 @@ import java.util.List;
  * TeleOp - Competition driver control
  * 
  * Features:
- * - Runtime robot/alliance/position selection (via BaseCompetitionOpMode)
+ * - Runtime robot/alliance/position selection (via BaseOpMode)
  * - Field-relative and robot-relative drive modes
  * - Single-shot auto-aim (Y button)
  * - Toggle continuous tracking (Left Bumper GP2)
@@ -26,9 +26,6 @@ import java.util.List;
  */
 @TeleOp(name = "TeleOp - Competition", group = "Competition")
 public class TeleOpDECODE extends BaseOpMode {
-    
-    // Auto-aim constants are now in Shooter class
-    // Access via Shooter.AutoAimConstants.*
     
     // ==================== TRACKING STATE ====================
     
@@ -92,7 +89,7 @@ public class TeleOpDECODE extends BaseOpMode {
 
         // === TELEMETRY ===
         displayTelemetry();
-        if (follower != null) { draw(); }   // Guard draw() call - follower initialized in start(), not init()
+        if (follower != null) { draw(); }
     }
     
     // ==================== DRIVING CONTROL ====================
@@ -104,7 +101,7 @@ public class TeleOpDECODE extends BaseOpMode {
         }
         
         // Check for driver override on rotation
-        if (trackingEnabled && Math.abs(gamepad1.right_stick_x) > Shooter.AutoAimConstants.OVERRIDE_THRESHOLD) {
+        if (trackingEnabled && Math.abs(gamepad1.right_stick_x) > Shooter.autoAim.overrideThreshold) {
             trackingEnabled = false;
             singleShotMode = false;
             lastAutoAimMessage = "Tracking override - driver control";
@@ -119,7 +116,6 @@ public class TeleOpDECODE extends BaseOpMode {
         }
         
         // Field-relative vs robot-relative
-        // Left bumper held = robot-relative mode
         boolean fieldRelative = !gamepad1.left_bumper;
         follower.setTeleOpDrive(
             -gamepad1.left_stick_y,
@@ -137,31 +133,24 @@ public class TeleOpDECODE extends BaseOpMode {
         
         Vision.AutoAimResult result = vision.getAutoAimData();
         if (!result.success) {
-            // Lost target - disable tracking
             trackingEnabled = false;
             singleShotMode = false;
             lastAutoAimMessage = "Tracking lost - no goal visible";
             return 0;
         }
         
-        // Update shooter velocity while tracking
         shooter.setAutoAimVelocity(result.distanceInches, result.tagId);
         autoAimSpinDownTimer.reset();
         
-        // Calculate heading error (bearing is in degrees)
         double headingError = result.bearingDegrees;
         
-        // Check if within deadband
-        if (Math.abs(headingError) < Shooter.AutoAimConstants.HEADING_DEADBAND_DEG) {
-            return 0; // Close enough, no correction needed
+        if (Math.abs(headingError) < Shooter.autoAim.headingDeadbandDeg) {
+            return 0;
         }
         
-        // P controller
-        double correction = headingError * Shooter.AutoAimConstants.HEADING_P_GAIN;
-        
-        // Clamp to max rotation speed
-        correction = Math.max(-Shooter.AutoAimConstants.MAX_TRACKING_ROTATION,
-                             Math.min(Shooter.AutoAimConstants.MAX_TRACKING_ROTATION, correction));
+        double correction = headingError * Shooter.autoAim.headingPGain;
+        correction = Math.max(-Shooter.autoAim.maxTrackingRotation,
+                             Math.min(Shooter.autoAim.maxTrackingRotation, correction));
         
         return correction;
     }
@@ -169,13 +158,11 @@ public class TeleOpDECODE extends BaseOpMode {
     // ==================== LED CONTROL ====================
     
     private void handleLEDControl() {
-        // Left Bumper: Green
         if (gamepad1.left_bumper && !leftBumperLast) {
             led.setGreen();
         }
         leftBumperLast = gamepad1.left_bumper;
         
-        // Right Bumper: Purple
         if (gamepad1.right_bumper && !rightBumperLast) {
             led.setPurple();
         }
@@ -185,21 +172,18 @@ public class TeleOpDECODE extends BaseOpMode {
     // ==================== SHOOTER CONTROL ====================
     
     private void handleShooterControls() {
-        // DPAD Right: High velocity
         if (gamepad2.dpad_right && !dpadRightLast) {
             shooter.setHighVelocity();
             autoAimSpinDownTimer.reset();
         }
         dpadRightLast = gamepad2.dpad_right;
         
-        // DPAD Left: Low velocity
         if (gamepad2.dpad_left && !dpadLeftLast) {
             shooter.setLowVelocity();
             autoAimSpinDownTimer.reset();
         }
         dpadLeftLast = gamepad2.dpad_left;
         
-        // B button: Stop shooter AND tracking
         if (gamepad2.b && !bButtonLast) {
             shooter.stop();
             trackingEnabled = false;
@@ -207,22 +191,17 @@ public class TeleOpDECODE extends BaseOpMode {
         }
         bButtonLast = gamepad2.b;
         
-        // Y button: Single-shot auto-aim (brief tracking burst)
         if (gamepad2.y && !yButtonLast) {
             performSingleShotAutoAim();
         }
         yButtonLast = gamepad2.y;
         
-        // Left Bumper: Toggle continuous tracking
         if (gamepad2.left_bumper && !leftBumperLast) {
             toggleTracking();
         }
         leftBumperLast = gamepad2.left_bumper;
     }
     
-    /**
-     * Single-shot auto-aim: Enable tracking for brief duration
-     */
     private void performSingleShotAutoAim() {
         Vision.AutoAimResult result = vision.getAutoAimData();
         
@@ -238,12 +217,8 @@ public class TeleOpDECODE extends BaseOpMode {
         }
     }
     
-    /**
-     * Toggle continuous tracking mode
-     */
     private void toggleTracking() {
         if (!trackingEnabled) {
-            // Enable tracking
             Vision.AutoAimResult result = vision.getAutoAimData();
             if (result.success) {
                 shooter.setAutoAimVelocity(result.distanceInches, result.tagId);
@@ -255,28 +230,21 @@ public class TeleOpDECODE extends BaseOpMode {
                 lastAutoAimMessage = "Cannot track - " + result.message;
             }
         } else {
-            // Disable tracking
             trackingEnabled = false;
             singleShotMode = false;
             lastAutoAimMessage = "Tracking disabled";
         }
     }
     
-    /**
-     * Handle single-shot tracking timeout and auto-aim spin-down
-     */
     private void handleTrackingTimeout() {
-        // Single-shot mode auto-disable after duration
-        if (singleShotMode && trackingTimer.seconds() >= Shooter.AutoAimConstants.SINGLE_SHOT_DURATION) {
+        if (singleShotMode && trackingTimer.seconds() >= Shooter.autoAim.singleShotDuration) {
             trackingEnabled = false;
             singleShotMode = false;
             lastAutoAimMessage = "Single-shot complete";
         }
         
-        // Auto-aim velocity spin-down after timeout
-        if (shooter.isAutoAimActive() &&
-            !trackingEnabled &&
-            autoAimSpinDownTimer.seconds() >= Shooter.AutoAimConstants.AUTO_AIM_SPIN_DOWN_TIME) {
+        if (shooter.isAutoAimActive() && !trackingEnabled &&
+            autoAimSpinDownTimer.seconds() >= Shooter.autoAim.autoAimSpinDownTime) {
             shooter.stop();
         }
     }
@@ -284,7 +252,6 @@ public class TeleOpDECODE extends BaseOpMode {
     // ==================== BALL FEED CONTROL ====================
     
     private void handleBallFeedControls() {
-        // Right Trigger: Feed ball
         if (gamepad2.right_trigger > 0.5 && gamepadRateLimit.milliseconds() > RATE_LIMIT_MS) {
             ballFeed.startFeed();
             gamepadRateLimit.reset();
@@ -296,7 +263,6 @@ public class TeleOpDECODE extends BaseOpMode {
     private void displayTelemetry() {
         List<AprilTagDetection> detections = vision.getDetections();
         
-        // === APRILTAG VISION ===
         telemetryM.debug("=== APRILTAG VISION ===");
         telemetryM.debug("Camera: " + vision.getCameraState());
         telemetryM.debug("Tags: " + detections.size());
@@ -313,7 +279,6 @@ public class TeleOpDECODE extends BaseOpMode {
         }
         telemetryM.debug("");
         
-        // === ROBOT STATUS ===
         telemetryM.debug("=== ROBOT STATUS ===");
         telemetryM.debug("Robot: " + character.toString());
         telemetryM.debug("Alliance: " + alliance.toString());
@@ -324,18 +289,17 @@ public class TeleOpDECODE extends BaseOpMode {
             Math.toDegrees(follower.getPose().getHeading())));
         telemetryM.debug("");
         
-        // === SHOOTER STATUS ===
         telemetryM.debug("=== SHOOTER ===");
         
         if (trackingEnabled) {
             telemetryM.debug("Mode: " + (singleShotMode ? "SINGLE-SHOT" : "CONTINUOUS") + " TRACKING");
             if (singleShotMode) {
-                double remaining = Shooter.AutoAimConstants.SINGLE_SHOT_DURATION - trackingTimer.seconds();
+                double remaining = Shooter.autoAim.singleShotDuration - trackingTimer.seconds();
                 telemetryM.debug(String.format("Time Left: %.2fs", Math.max(0, remaining)));
             }
         } else if (shooter.isAutoAimActive()) {
             telemetryM.debug("Mode: AUTO-AIM (spinning down)");
-            double remaining = Shooter.AutoAimConstants.AUTO_AIM_SPIN_DOWN_TIME - autoAimSpinDownTimer.seconds();
+            double remaining = Shooter.autoAim.autoAimSpinDownTime - autoAimSpinDownTimer.seconds();
             telemetryM.debug(String.format("Spin-down: %.2fs", Math.max(0, remaining)));
         } else {
             telemetryM.debug("Mode: Manual");
@@ -355,7 +319,6 @@ public class TeleOpDECODE extends BaseOpMode {
         }
         telemetryM.debug("");
         
-        // === BALL FEED STATUS ===
         telemetryM.debug("=== BALL FEED ===");
         telemetryM.debug("Feeding: " + (ballFeed.isFeeding() ? "YES" : "NO"));
         if (ballFeed.isFeeding()) {
@@ -363,7 +326,6 @@ public class TeleOpDECODE extends BaseOpMode {
         }
         telemetryM.debug("");
         
-        // === CONTROLS REMINDER ===
         telemetryM.debug("=== CONTROLS ===");
         telemetryM.debug("GP1: Left Stick=Drive, Right Stick=Rotate");
         telemetryM.debug("GP1: LBump=Robot-Relative Mode");
@@ -376,8 +338,6 @@ public class TeleOpDECODE extends BaseOpMode {
         
         telemetryM.update(telemetry);
     }
-    
-    // ==================== STOP ====================
     
     @Override
     protected void onStop() {

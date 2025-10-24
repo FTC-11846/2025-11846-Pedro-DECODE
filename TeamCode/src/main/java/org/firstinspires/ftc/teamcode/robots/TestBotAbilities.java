@@ -1,97 +1,83 @@
 package org.firstinspires.ftc.teamcode.robots;
 
-import com.bylazar.configurables.annotations.Configurable;
-
 /**
  * TestBotAbilities - Configuration for the development/testing robot
  * Used for alpha/beta testing of major features before competition
  */
 public class TestBotAbilities extends CharacterStats {
-
-    // ==================== TUNABLE CONSTANTS ====================
-
-    @Configurable
-    public static class ShooterConstants {
-        public static double HIGH_VELOCITY_RPM = 5500;
-        public static double LOW_VELOCITY_RPM = 1500;
-        public static double BASELINE_POWER = 395.0;
-        public static double PIDF_P = 10.0;
+    
+    // ==================== PRIVATE TUNING CONSTANTS ====================
+    
+    // Shooter tuning values
+    private static final double HIGH_VELOCITY_RPM = 5500;
+    private static final double LOW_VELOCITY_RPM = 1500;
+    private static final double BASELINE_POWER = 395.0;
+    private static final double PIDF_P = 10.0;
+    
+    // Ball feed tuning
+    private static final double FEED_DURATION = 0.25;
+    
+    // Start pose tuning (uses default 0°)
+    private static final double DEFAULT_HEADING_DEG = 0.0;
+    
+    // ==================== CONFIGURATION APPLICATION ====================
+    
+    @Override
+    public void applyConfiguration() {
+        // Update robot identity
+        CharacterStats._00_robotIdentity.activeRobot = getDisplayName();
+        
+        // Copy shooter values into shared config
+        CharacterStats.shooterConfig.highVelocityRPM = HIGH_VELOCITY_RPM;
+        CharacterStats.shooterConfig.lowVelocityRPM = LOW_VELOCITY_RPM;
+        CharacterStats.shooterConfig.baselinePower = BASELINE_POWER;
+        CharacterStats.shooterConfig.pidfP = PIDF_P;
+        
+        // Copy ball feed values
+        CharacterStats.ballFeedConfig.feedDuration = FEED_DURATION;
+        
+        // Copy start pose values
+        CharacterStats.startPoseConfig.defaultHeadingDeg = DEFAULT_HEADING_DEG;
     }
-
-    @Configurable
-    public static class BallFeedConstants {
-        public static double FEED_DURATION = 0.25;
-    }
-
+    
     // ==================== IDENTITY ====================
-
+    
     @Override
     public String getDisplayName() {
         return "TestBot";
     }
-
+    
     @Override
     public String getShortName() {
         return "TB";
     }
-
+    
     // ==================== SHOOTER CONFIGURATION ====================
-
+    
     @Override
     public String getShooterMotorLName() {
         return "launchMotor";
     }
-
+    
     @Override
     public String getShooterMotorRName() {
         return null; // TestBot has single shooter
     }
-
-    @Override
-    public double getHighVelocityRPM() {
-        return ShooterConstants.HIGH_VELOCITY_RPM;
-    }
-
-    @Override
-    public double getLowVelocityRPM() {
-        return ShooterConstants.LOW_VELOCITY_RPM;
-    }
-
-    @Override
-    public double getBaselinePower() {
-        return ShooterConstants.BASELINE_POWER;
-    }
-
-    @Override
-    public double getShooterPIDFP() {
-        return ShooterConstants.PIDF_P;
-    }
-
+    
     // ==================== BALL FEED CONFIGURATION ====================
-
+    
     @Override
     public String getBallFeedMotorLName() {
         return "feedServoL";
     }
-
+    
     @Override
     public String getBallFeedMotorRName() {
         return "feedServoR";
     }
-
+    
     @Override
     public BallFeedMode getBallFeedMode() {
         return BallFeedMode.DUAL_SYNCHRONIZED;
     }
-
-    @Override
-    public double getDefaultFeedDuration() {
-        return BallFeedConstants.FEED_DURATION;
-    }
-
-    // ==================== MECHANISM CONFIGURATION ====================
-    // TestBot has no special mechanisms, all defaults from base class
-
-    // ==================== STARTING POSES ====================
-    // TestBot uses default poses from base class
 }

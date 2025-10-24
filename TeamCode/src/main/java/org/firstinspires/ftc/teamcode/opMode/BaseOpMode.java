@@ -195,6 +195,7 @@ public abstract class BaseOpMode extends OpMode {
         // A to confirm
         if (gamepad1.a && !aButtonLast) {
             character = MainCharacter.values()[selectedRobotIndex];
+            character.getAbilities().applyConfiguration();  // ADD THIS LINE+
             MainCharacter.ACTIVE_ROBOT = character;
             currentStage = InitStage.SELECT_ALLIANCE;
             
