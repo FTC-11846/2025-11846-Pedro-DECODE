@@ -56,12 +56,12 @@ public class Robot11846Abilities extends CharacterStats {
     
     @Override
     public String getShooterMotorLName() {
-        return "launchMotor";
+        return "launchMotorL";
     }
     
     @Override
     public String getShooterMotorRName() {
-        return null; // Single shooter
+        return "launchMotorR";
     }
     
     // ==================== BALL FEED CONFIGURATION ====================
