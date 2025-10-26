@@ -52,7 +52,7 @@ public class Constants {
     // ==================== TEST BOT CONSTANTS ====================
 
     private static FollowerConstants testBotFollowerConstants = new FollowerConstants()
-            .mass(6)   // kg - Must be updated after weighing
+            .mass(9.53)   // kg - Must be updated after weighing (kg = Lbs / 2.2046)
             .forwardZeroPowerAcceleration(-50.943) // in/s^2
             .lateralZeroPowerAcceleration(-63.789) // in/s^2
             .useSecondaryHeadingPIDF(true)
@@ -83,7 +83,7 @@ public class Constants {
     // ==================== ROBOT 22154 CONSTANTS ====================
 
     private static FollowerConstants robot22154FollowerConstants = new FollowerConstants()
-            .mass(6)
+            .mass(15.88)
             .forwardZeroPowerAcceleration(-50.943)
             .lateralZeroPowerAcceleration(-63.789)
             .useSecondaryHeadingPIDF(true)
@@ -104,7 +104,7 @@ public class Constants {
 
     private static PinpointConstants robot22154LocalizerConstants = new PinpointConstants()
             .forwardPodY(3)
-            .strafePodX(6)
+            .strafePodX(7)
             .distanceUnit(DistanceUnit.INCH)
             .hardwareMapName("pinpoint")
             .encoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD)
@@ -114,7 +114,7 @@ public class Constants {
     // ==================== ROBOT 11846 CONSTANTS ====================
 
     private static FollowerConstants robot11846FollowerConstants = new FollowerConstants()
-            .mass(6)
+            .mass(12.70)
             .forwardZeroPowerAcceleration(-50.943)
             .lateralZeroPowerAcceleration(-63.789)
             .useSecondaryHeadingPIDF(true)
@@ -134,8 +134,8 @@ public class Constants {
             .yVelocity(31.839);
 
     private static PinpointConstants robot11846LocalizerConstants = new PinpointConstants()
-            .forwardPodY(3)
-            .strafePodX(6)
+            .forwardPodY(1)
+            .strafePodX(-6)
             .distanceUnit(DistanceUnit.INCH)
             .hardwareMapName("pinpoint")
             .encoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD)

@@ -2,9 +2,8 @@ package org.firstinspires.ftc.teamcode.subsystems;
 
 import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.configurables.annotations.IgnoreConfigurable;
-import com.qualcomm.robotcore.hardware.CRServo;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.robots.CharacterStats;
@@ -52,10 +51,10 @@ public class BallFeed {
     private final BallFeedMode mode;
     
     @IgnoreConfigurable
-    private final CRServo motorL;
+    private final Servo motorL;
     
     @IgnoreConfigurable
-    private final CRServo motorR; // null for single motor mode
+    private final Servo motorR; // null for single motor mode
     
     @IgnoreConfigurable
     private final ElapsedTime leftTimer = new ElapsedTime();
@@ -101,18 +100,18 @@ public class BallFeed {
         switch (mode) {
             case SINGLE:
                 // Only left motor
-                motorL = hardwareMap.get(CRServo.class, stats.getBallFeedMotorLName());
-                motorL.setDirection(DcMotorSimple.Direction.REVERSE);
+                motorL = hardwareMap.get(Servo.class, stats.getBallFeedMotorLName());
+//                motorL.setDirection(DcMotorSimple.Direction.REVERSE);
                 motorR = null;
                 break;
             
             case DUAL_SYNCHRONIZED:
             case DUAL_INDEPENDENT:
                 // Both motors
-                motorL = hardwareMap.get(CRServo.class, stats.getBallFeedMotorLName());
-                motorR = hardwareMap.get(CRServo.class, stats.getBallFeedMotorRName());
-                motorL.setDirection(DcMotorSimple.Direction.REVERSE);
-                motorR.setDirection(DcMotorSimple.Direction.FORWARD);
+                motorL = hardwareMap.get(Servo.class, stats.getBallFeedMotorLName());
+                motorR = hardwareMap.get(Servo.class, stats.getBallFeedMotorRName());
+//                motorL.setDirection(DcMotorSimple.Direction.REVERSE);
+//                motorR.setDirection(DcMotorSimple.Direction.FORWARD);
                 break;
             
             default:
@@ -163,29 +162,29 @@ public class BallFeed {
     public void stopFeed() {
         leftState = FeedState.IDLE;
         rightState = FeedState.IDLE;
-        motorL.setPower(0);
-        if (motorR != null) {
-            motorR.setPower(0);
-        }
+//        motorL.setPower(0);
+//        if (motorR != null) {
+//            motorR.setPower(0);
+//        }
     }
     
     /**
      * Set custom feed power (-1.0 to 1.0) for manual control
      */
-    public void setFeedPower(double power) {
-        setMotorPowers(power, power);
-    }
+//    public void setFeedPower(double power) {
+//        setMotorPosition(power, power);
+//    }
     
     /**
      * Set independent powers for left and right motors
      */
-    public void setIndependentPowers(double leftPower, double rightPower) {
-        if (mode != BallFeedMode.DUAL_INDEPENDENT) {
-            setMotorPowers(leftPower, leftPower);
-        } else {
-            setMotorPowers(leftPower, rightPower);
-        }
-    }
+//    public void setIndependentPowers(double leftPower, double rightPower) {
+//        if (mode != BallFeedMode.DUAL_INDEPENDENT) {
+//            setMotorPosition(leftPower, leftPower);
+//        } else {
+//            setMotorPosition(leftPower, rightPower);
+//        }
+//    }
     
     /**
      * Must be called in loop() to handle state machine
@@ -314,61 +313,71 @@ public class BallFeed {
     }
     
     private void updateLeftMotor() {
-        double power = 0.0;
+        double position = 0.5;
         
         switch (leftState) {
             case FEEDING:
-                power = feedingControl.feedPower * feedingControl.leftPowerMultiplier;
+                position = 0.9;
+//                power = feedingControl.feedPower * feedingControl.leftPowerMultiplier;
                 break;
             case HOLDING:
-                power = 0.0; // Stop during hold
+                position = 0.9; // Stop during hold
                 break;
             case REVERSING:
             case RETURNING:
-                power = feedingControl.reversePower * feedingControl.leftPowerMultiplier;
+                position = 0.5;
+//                position = feedingControl.reversePower * feedingControl.leftPowerMultiplier;
                 break;
             case IDLE:
-                power = 0.0;
+                position = 0.5;
                 break;
         }
         
-        motorL.setPower(power);
+        motorL.setPosition(position);
     }
     
     private void updateRightMotor() {
         if (motorR == null) return;
         
-        double power = 0.0;
+        double position = 0.5;
         
         switch (rightState) {
             case FEEDING:
-                power = feedingControl.feedPower * feedingControl.rightPowerMultiplier;
+                position = 0.1;
+//                position = feedingControl.feedPower * feedingControl.rightPowerMultiplier;
                 break;
             case HOLDING:
-                power = 0.0;
+                position = 0.1;
                 break;
             case REVERSING:
             case RETURNING:
-                power = feedingControl.reversePower * feedingControl.rightPowerMultiplier;
+                position = 0.5;
+//                position = feedingControl.reversePower * feedingControl.rightPowerMultiplier;
                 break;
             case IDLE:
-                power = 0.0;
+                position = 0.5;
                 break;
         }
         
-        motorR.setPower(power);
+        motorR.setPosition(position);
     }
-    
-    private void setMotorPowers(double leftPower, double rightPower) {
-        // Apply multipliers if in independent mode
-        if (mode == BallFeedMode.DUAL_INDEPENDENT) {
-            leftPower *= feedingControl.leftPowerMultiplier;
-            rightPower *= feedingControl.rightPowerMultiplier;
-        }
-        
-        motorL.setPower(leftPower);
-        if (motorR != null) {
-            motorR.setPower(rightPower);
-        }
-    }
+
+//    private void setMotorPowers(double leftPower, double rightPower) {
+//        // Apply multipliers if in independent mode
+//        if (mode == BallFeedMode.DUAL_INDEPENDENT) {
+//            leftPower *= feedingControl.leftPowerMultiplier;
+//            rightPower *= feedingControl.rightPowerMultiplier;
+//        }
+//        private void setMotorPosition(double leftPosition, double rightPosition) {
+//            // Apply multipliers if in independent mode
+//            if (mode == BallFeedMode.DUAL_INDEPENDENT) {
+//                leftPosition *= feedingControl.leftPowerMultiplier;
+//                rightPosition *= feedingControl.rightPowerMultiplier;
+//            }
+//
+//            motorL.setPosition(leftPosition);
+//        if (motorR != null) {
+//            motorR.setPosition(rightPosition);
+//        }
+//    }
 }

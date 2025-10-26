@@ -9,8 +9,7 @@ import com.bylazar.configurables.annotations.Configurable;
 public class Robot11846Abilities extends CharacterStats {
     
     // ==================== TUNABLE CONSTANTS ====================
-    
-    @Configurable
+
     public static class ShooterConstants {
         public static double HIGH_VELOCITY_RPM = 5500;
         public static double LOW_VELOCITY_RPM = 1500;
@@ -18,7 +17,6 @@ public class Robot11846Abilities extends CharacterStats {
         public static double PIDF_P = 10.0;
     }
     
-    @Configurable
     public static class BallFeedConstants {
         public static double FEED_DURATION = 0.5;     // Gate lowering time
         public static double REVERSE_DURATION = 0.5;  // Gate raising time (return)
@@ -38,17 +36,17 @@ public class Robot11846Abilities extends CharacterStats {
     }
     
     // ==================== SHOOTER CONFIGURATION ====================
-    
+
     @Override
     public String getShooterMotorLName() {
-        return "launchMotor";
+        return "launchMotorL";
     }
-    
+
     @Override
     public String getShooterMotorRName() {
-        return null; // Single shooter
+        return "launchMotorR"; // Dual shooters
     }
-    
+
     // ==================== BALL FEED CONFIGURATION ====================
     
     @Override
@@ -97,35 +95,35 @@ public class Robot11846Abilities extends CharacterStats {
     
     @Override
     public boolean hasColorSensors() {
-        return true;  // Has sensors for ball detection
+        return false;  // Has sensors for ball detection
     }
     
-    @Override
-    public String getLeftLaneColorSensorName() {
-        return "leftColorSensor";
-    }
-    
-    @Override
-    public String getRightLaneColorSensorName() {
-        return "rightColorSensor";
-    }
-    
+//    @Override
+//    public String getLeftLaneColorSensorName() {
+//        return "leftColorSensor";
+//    }
+//
+//    @Override
+//    public String getRightLaneColorSensorName() {
+//        return "rightColorSensor";
+//    }
+
     // ==================== LED CONFIGURATION ====================
     
     @Override
     public boolean hasLEDSystem() {
-        return true;  // Has LEDs for ball status display
+        return false;  // Has LEDs for ball status display
     }
     
-    @Override
-    public String getLEDServoLName() {
-        return "ballColorLEDL";
-    }
-    
-    @Override
-    public String getLEDServoRName() {
-        return "ballColorLEDR";
-    }
+//    @Override
+//    public String getLEDServoLName() {
+//        return "ballColorLEDL";
+//    }
+//
+//    @Override
+//    public String getLEDServoRName() {
+//        return "ballColorLEDR";
+//    }
     
     // ==================== MECHANISM CONFIGURATION ====================
     
