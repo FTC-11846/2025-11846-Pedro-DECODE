@@ -148,8 +148,8 @@ public abstract class BaseOpMode extends OpMode {
     @Override
     public final void start() {
         // Create follower with selected starting pose
-        follower = Constants.createFollower(hardwareMap);
-        
+        follower = Constants.createFollower(hardwareMap, character);
+
         // Set starting pose (restore from state or use selection)
         Pose startPose;
         if (RobotState.hasState() && RobotState.lastKnownPose != null) {

@@ -89,7 +89,7 @@ public class TeleOpDECODE extends BaseOpMode {
 
         // === TELEMETRY ===
         displayTelemetry();
-        if (follower != null) { draw(); }
+        // if (follower != null) { draw(); }
     }
     
     // ==================== DRIVING CONTROL ====================
