@@ -11,8 +11,11 @@ import org.firstinspires.ftc.teamcode.robots.CharacterStats;
 import org.firstinspires.ftc.teamcode.robots.CharacterStats.BallFeedMode;
 
 /**
- * Ball feeding subsystem with universal configuration constants
- * Robot-specific tuning values come from CharacterStats (populated via applyConfiguration)
+ * Ball feeding subsystem with feed-and-reverse state machine
+ * - 22154: Feed wheels forward → reverse to prevent double-feed
+ * - 11846: Servos lower gates → hold for ball to pass → return to raised position
+ * 
+ * Independent left/right lane control via triggers
  */
 @Configurable
 public class BallFeed {
@@ -30,6 +33,16 @@ public class BallFeed {
         public double rightPowerMultiplier = 1.0;
     }
     
+    // ==================== STATE TRACKING ====================
+    
+    private enum FeedState {
+        IDLE,       // Not feeding
+        FEEDING,    // Moving forward (both robots) or lowering gate (11846)
+        HOLDING,    // 11846 only: gate down, waiting for ball to pass
+        REVERSING,  // 22154 only: reversing to prevent double-feed / 11846: raising gate
+        RETURNING   // Alias for REVERSING, used by 11846
+    }
+    
     // ==================== SUBSYSTEM FIELDS ====================
     
     @IgnoreConfigurable
@@ -45,13 +58,25 @@ public class BallFeed {
     private final CRServo motorR; // null for single motor mode
     
     @IgnoreConfigurable
-    private final ElapsedTime feedTimer = new ElapsedTime();
+    private final ElapsedTime leftTimer = new ElapsedTime();
     
     @IgnoreConfigurable
-    private boolean isFeeding = false;
+    private final ElapsedTime rightTimer = new ElapsedTime();
     
     @IgnoreConfigurable
-    private double feedDurationSeconds;
+    private FeedState leftState = FeedState.IDLE;
+    
+    @IgnoreConfigurable
+    private FeedState rightState = FeedState.IDLE;
+    
+    @IgnoreConfigurable
+    private final double feedDuration;
+    
+    @IgnoreConfigurable
+    private final double reverseDuration;
+    
+    @IgnoreConfigurable
+    private final double holdDuration;
     
     // ==================== CONSTRUCTOR ====================
     
@@ -68,7 +93,9 @@ public class BallFeed {
     public BallFeed(HardwareMap hardwareMap, CharacterStats stats) {
         this.stats = stats;
         this.mode = stats.getBallFeedMode();
-        this.feedDurationSeconds = stats.getDefaultFeedDuration();
+        this.feedDuration = stats.getDefaultFeedDuration();
+        this.reverseDuration = stats.getFeedReverseDuration();
+        this.holdDuration = stats.getFeedHoldDuration();
         
         // Initialize motors based on mode
         switch (mode) {
@@ -96,103 +123,98 @@ public class BallFeed {
     // ==================== PUBLIC CONTROL METHODS ====================
     
     /**
-     * Start feeding a ball (runs for configured duration)
+     * Feed left lane (trigger by GP2 LT)
+     * Starts state machine: FEEDING → (HOLDING) → REVERSING/RETURNING → IDLE
+     */
+    public void feedLeft() {
+        if (leftState != FeedState.IDLE) return; // Prevent double-trigger
+        
+        leftState = FeedState.FEEDING;
+        leftTimer.reset();
+        updateLeftMotor();
+    }
+    
+    /**
+     * Feed right lane (trigger by GP2 RT)
+     * Starts state machine: FEEDING → (HOLDING) → REVERSING/RETURNING → IDLE
+     */
+    public void feedRight() {
+        if (motorR == null) return; // Single motor mode
+        if (rightState != FeedState.IDLE) return; // Prevent double-trigger
+        
+        rightState = FeedState.FEEDING;
+        rightTimer.reset();
+        updateRightMotor();
+    }
+    
+    /**
+     * Legacy synchronized feed (backward compatibility)
      */
     public void startFeed() {
-        if (!isFeeding) {
-            setMotorPowers(feedingControl.feedPower, feedingControl.feedPower);
-            feedTimer.reset();
-            isFeeding = true;
+        feedLeft();
+        if (motorR != null) {
+            feedRight();
         }
     }
     
     /**
-     * Start feeding with custom duration
-     */
-    public void startFeed(double durationSeconds) {
-        this.feedDurationSeconds = durationSeconds;
-        startFeed();
-    }
-    
-    /**
-     * Reverse feed (e.g., to unjam)
-     */
-    public void startReverse() {
-        startReverse(feedDurationSeconds);
-    }
-    
-    /**
-     * Reverse feed with custom duration
-     */
-    public void startReverse(double durationSeconds) {
-        if (!isFeeding) {
-            setMotorPowers(feedingControl.reversePower, feedingControl.reversePower);
-            this.feedDurationSeconds = durationSeconds;
-            feedTimer.reset();
-            isFeeding = true;
-        }
-    }
-    
-    /**
-     * Manually stop feeding (for emergency or manual control)
+     * Manually stop feeding (emergency or manual control)
      */
     public void stopFeed() {
-        setMotorPowers(0, 0);
-        isFeeding = false;
+        leftState = FeedState.IDLE;
+        rightState = FeedState.IDLE;
+        motorL.setPower(0);
+        if (motorR != null) {
+            motorR.setPower(0);
+        }
     }
     
     /**
-     * Set custom feed power (-1.0 to 1.0)
-     * Use this for manual control or custom feed speeds
+     * Set custom feed power (-1.0 to 1.0) for manual control
      */
     public void setFeedPower(double power) {
         setMotorPowers(power, power);
-        isFeeding = (power != 0);
     }
     
     /**
      * Set independent powers for left and right motors
-     * Works in all modes (synchronized mode just uses same power for both)
      */
     public void setIndependentPowers(double leftPower, double rightPower) {
         if (mode != BallFeedMode.DUAL_INDEPENDENT) {
-            // Just apply synchronized power for non-independent modes
             setMotorPowers(leftPower, leftPower);
         } else {
-            // Apply independent powers for DUAL_INDEPENDENT
             setMotorPowers(leftPower, rightPower);
         }
-        isFeeding = (leftPower != 0 || rightPower != 0);
     }
     
     /**
-     * Must be called in loop() to handle timed feeding
-     * Automatically stops feeding after duration expires
+     * Must be called in loop() to handle state machine
      */
     public void periodic() {
-        if (isFeeding && feedTimer.seconds() >= feedDurationSeconds) {
-            stopFeed();
-        }
+        updateLeftStateMachine();
+        updateRightStateMachine();
     }
     
     // ==================== GETTERS ====================
     
     public boolean isFeeding() {
-        return isFeeding;
+        return leftState != FeedState.IDLE || rightState != FeedState.IDLE;
     }
     
-    public double getRemainingFeedTime() {
-        if (!isFeeding) return 0;
-        double remaining = feedDurationSeconds - feedTimer.seconds();
-        return Math.max(0, remaining);
+    public boolean isLeftFeeding() {
+        return leftState != FeedState.IDLE;
     }
     
-    public void setFeedDuration(double seconds) {
-        this.feedDurationSeconds = seconds;
+    public boolean isRightFeeding() {
+        return rightState != FeedState.IDLE;
     }
     
-    public double getFeedDuration() {
-        return feedDurationSeconds;
+    public String getLeftStateString() {
+        return leftState.toString();
+    }
+    
+    public String getRightStateString() {
+        return rightState.toString();
     }
     
     public BallFeedMode getMode() {
@@ -203,7 +225,139 @@ public class BallFeed {
         return stats.getDisplayName();
     }
     
-    // ==================== PRIVATE HELPER METHODS ====================
+    // ==================== PRIVATE STATE MACHINE ====================
+    
+    private void updateLeftStateMachine() {
+        switch (leftState) {
+            case IDLE:
+                // Waiting for trigger
+                break;
+            
+            case FEEDING:
+                if (leftTimer.seconds() >= feedDuration) {
+                    // Check if we need HOLDING or go straight to REVERSING
+                    if (holdDuration > 0) {
+                        leftState = FeedState.HOLDING;
+                        leftTimer.reset();
+                        updateLeftMotor(); // Stop motor during hold
+                    } else if (reverseDuration > 0) {
+                        leftState = FeedState.REVERSING;
+                        leftTimer.reset();
+                        updateLeftMotor(); // Start reverse
+                    } else {
+                        leftState = FeedState.IDLE;
+                        updateLeftMotor(); // Stop
+                    }
+                }
+                break;
+            
+            case HOLDING:
+                // 11846: Gate is down, waiting for ball to pass
+                if (leftTimer.seconds() >= holdDuration) {
+                    leftState = FeedState.RETURNING;
+                    leftTimer.reset();
+                    updateLeftMotor(); // Start return
+                }
+                break;
+            
+            case REVERSING:
+            case RETURNING:
+                if (leftTimer.seconds() >= (reverseDuration > 0 ? reverseDuration : feedDuration)) {
+                    leftState = FeedState.IDLE;
+                    updateLeftMotor(); // Stop
+                }
+                break;
+        }
+    }
+    
+    private void updateRightStateMachine() {
+        if (motorR == null) return;
+        
+        switch (rightState) {
+            case IDLE:
+                // Waiting for trigger
+                break;
+            
+            case FEEDING:
+                if (rightTimer.seconds() >= feedDuration) {
+                    if (holdDuration > 0) {
+                        rightState = FeedState.HOLDING;
+                        rightTimer.reset();
+                        updateRightMotor();
+                    } else if (reverseDuration > 0) {
+                        rightState = FeedState.REVERSING;
+                        rightTimer.reset();
+                        updateRightMotor();
+                    } else {
+                        rightState = FeedState.IDLE;
+                        updateRightMotor();
+                    }
+                }
+                break;
+            
+            case HOLDING:
+                if (rightTimer.seconds() >= holdDuration) {
+                    rightState = FeedState.RETURNING;
+                    rightTimer.reset();
+                    updateRightMotor();
+                }
+                break;
+            
+            case REVERSING:
+            case RETURNING:
+                if (rightTimer.seconds() >= (reverseDuration > 0 ? reverseDuration : feedDuration)) {
+                    rightState = FeedState.IDLE;
+                    updateRightMotor();
+                }
+                break;
+        }
+    }
+    
+    private void updateLeftMotor() {
+        double power = 0.0;
+        
+        switch (leftState) {
+            case FEEDING:
+                power = feedingControl.feedPower * feedingControl.leftPowerMultiplier;
+                break;
+            case HOLDING:
+                power = 0.0; // Stop during hold
+                break;
+            case REVERSING:
+            case RETURNING:
+                power = feedingControl.reversePower * feedingControl.leftPowerMultiplier;
+                break;
+            case IDLE:
+                power = 0.0;
+                break;
+        }
+        
+        motorL.setPower(power);
+    }
+    
+    private void updateRightMotor() {
+        if (motorR == null) return;
+        
+        double power = 0.0;
+        
+        switch (rightState) {
+            case FEEDING:
+                power = feedingControl.feedPower * feedingControl.rightPowerMultiplier;
+                break;
+            case HOLDING:
+                power = 0.0;
+                break;
+            case REVERSING:
+            case RETURNING:
+                power = feedingControl.reversePower * feedingControl.rightPowerMultiplier;
+                break;
+            case IDLE:
+                power = 0.0;
+                break;
+        }
+        
+        motorR.setPower(power);
+    }
     
     private void setMotorPowers(double leftPower, double rightPower) {
         // Apply multipliers if in independent mode

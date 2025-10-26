@@ -1,43 +1,28 @@
 package org.firstinspires.ftc.teamcode.robots;
 
+import com.bylazar.configurables.annotations.Configurable;
+
 /**
  * Robot11846Abilities - Configuration for competition robot 11846
- * Features: Single shooter, folding mechanism
+ * Features: Single shooter, dual-independent ball feed (gates), single-toggle intake, color sensors, LEDs
  */
 public class Robot11846Abilities extends CharacterStats {
     
-    // ==================== PRIVATE TUNING CONSTANTS ====================
+    // ==================== TUNABLE CONSTANTS ====================
     
-    // Shooter tuning values
-    private static final double HIGH_VELOCITY_RPM = 5500;
-    private static final double LOW_VELOCITY_RPM = 1500;
-    private static final double BASELINE_POWER = 395.0;
-    private static final double PIDF_P = 10.0;
+    @Configurable
+    public static class ShooterConstants {
+        public static double HIGH_VELOCITY_RPM = 5500;
+        public static double LOW_VELOCITY_RPM = 1500;
+        public static double BASELINE_POWER = 395.0;
+        public static double PIDF_P = 10.0;
+    }
     
-    // Ball feed tuning
-    private static final double FEED_DURATION = 0.25;
-    
-    // Start pose tuning (uses default 0°)
-    private static final double DEFAULT_HEADING_DEG = 0.0;
-    
-    // ==================== CONFIGURATION APPLICATION ====================
-    
-    @Override
-    public void applyConfiguration() {
-        // Update robot identity
-        CharacterStats._00_robotIdentity.activeRobot = getDisplayName();
-        
-        // Copy shooter values into shared config
-        CharacterStats.shooterConfig.highVelocityRPM = HIGH_VELOCITY_RPM;
-        CharacterStats.shooterConfig.lowVelocityRPM = LOW_VELOCITY_RPM;
-        CharacterStats.shooterConfig.baselinePower = BASELINE_POWER;
-        CharacterStats.shooterConfig.pidfP = PIDF_P;
-        
-        // Copy ball feed values
-        CharacterStats.ballFeedConfig.feedDuration = FEED_DURATION;
-        
-        // Copy start pose values
-        CharacterStats.startPoseConfig.defaultHeadingDeg = DEFAULT_HEADING_DEG;
+    @Configurable
+    public static class BallFeedConstants {
+        public static double FEED_DURATION = 0.5;     // Gate lowering time
+        public static double REVERSE_DURATION = 0.5;  // Gate raising time (return)
+        public static double HOLD_DURATION = 0.3;     // Hold gate down for ball to pass
     }
     
     // ==================== IDENTITY ====================
@@ -56,12 +41,12 @@ public class Robot11846Abilities extends CharacterStats {
     
     @Override
     public String getShooterMotorLName() {
-        return "launchMotorL";
+        return "launchMotor";
     }
     
     @Override
     public String getShooterMotorRName() {
-        return "launchMotorR";
+        return null; // Single shooter
     }
     
     // ==================== BALL FEED CONFIGURATION ====================
@@ -78,13 +63,97 @@ public class Robot11846Abilities extends CharacterStats {
     
     @Override
     public BallFeedMode getBallFeedMode() {
-        return BallFeedMode.DUAL_INDEPENDENT;
+        return BallFeedMode.DUAL_INDEPENDENT;  // Independent L/R gate control
+    }
+    
+    @Override
+    public double getFeedReverseDuration() {
+        return ballFeedConfig.reverseDuration;  // Gate return time
+    }
+    
+    @Override
+    public double getFeedHoldDuration() {
+        return ballFeedConfig.holdDuration;  // Hold gate down for ball
+    }
+    
+    // ==================== INTAKE CONFIGURATION ====================
+    
+    @Override
+    public IntakeMode getIntakeMode() {
+        return IntakeMode.SINGLE_TOGGLE;  // One motor, toggle on/off
+    }
+    
+    @Override
+    public String getIntakeOneMotorName() {
+        return "intakeMotor";  // Single DCMotorEx
+    }
+    
+    @Override
+    public String getIntakeTwoMotorName() {
+        return null;  // No second intake
+    }
+    
+    // ==================== COLOR SENSOR CONFIGURATION ====================
+    
+    @Override
+    public boolean hasColorSensors() {
+        return true;  // Has sensors for ball detection
+    }
+    
+    @Override
+    public String getLeftLaneColorSensorName() {
+        return "leftColorSensor";
+    }
+    
+    @Override
+    public String getRightLaneColorSensorName() {
+        return "rightColorSensor";
+    }
+    
+    // ==================== LED CONFIGURATION ====================
+    
+    @Override
+    public boolean hasLEDSystem() {
+        return true;  // Has LEDs for ball status display
+    }
+    
+    @Override
+    public String getLEDServoLName() {
+        return "ballColorLEDL";
+    }
+    
+    @Override
+    public String getLEDServoRName() {
+        return "ballColorLEDR";
     }
     
     // ==================== MECHANISM CONFIGURATION ====================
     
     @Override
     public boolean hasFoldingMechanism() {
-        return true; // This robot has a folding mechanism!
+        return true;  // Has folding mechanism
+    }
+    
+    // ==================== STARTING POSES ====================
+    // Robot 11846 uses default poses from base class (0° heading)
+    
+    // ==================== CONFIGURATION APPLICATION ====================
+    
+    @Override
+    public void applyConfiguration() {
+        _00_robotIdentity.activeRobot = getDisplayName();
+        
+        shooterConfig.highVelocityRPM = ShooterConstants.HIGH_VELOCITY_RPM;
+        shooterConfig.lowVelocityRPM = ShooterConstants.LOW_VELOCITY_RPM;
+        shooterConfig.baselinePower = ShooterConstants.BASELINE_POWER;
+        shooterConfig.pidfP = ShooterConstants.PIDF_P;
+        
+        ballFeedConfig.feedDuration = BallFeedConstants.FEED_DURATION;
+        ballFeedConfig.reverseDuration = BallFeedConstants.REVERSE_DURATION;
+        ballFeedConfig.holdDuration = BallFeedConstants.HOLD_DURATION;
+        
+        intakeConfig.intakeModeName = getIntakeMode().name();
+        
+        startPoseConfig.defaultHeadingDeg = 0.0;
     }
 }

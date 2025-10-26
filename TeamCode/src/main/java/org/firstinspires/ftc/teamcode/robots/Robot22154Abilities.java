@@ -1,45 +1,34 @@
 package org.firstinspires.ftc.teamcode.robots;
 
+import com.bylazar.configurables.annotations.Configurable;
 import com.pedropathing.geometry.Pose;
 
 /**
  * Robot22154Abilities - Configuration for competition robot 22154
- * Features: Dual shooters, LED system, lifters
+ * Features: Dual shooters, dual-independent ball feed, dual-independent intake, color sensors, LEDs, lifters
  */
 public class Robot22154Abilities extends CharacterStats {
     
-    // ==================== PRIVATE TUNING CONSTANTS ====================
+    // ==================== TUNABLE CONSTANTS ====================
     
-    // Shooter tuning values
-    private static final double HIGH_VELOCITY_RPM = 4000;
-    private static final double LOW_VELOCITY_RPM = 1500;
-    private static final double BASELINE_POWER = 2000.0;
-    private static final double PIDF_P = 20.0;
+    @Configurable
+    public static class ShooterConstants {
+        public static double HIGH_VELOCITY_RPM = 4000;
+        public static double LOW_VELOCITY_RPM = 1500;
+        public static double BASELINE_POWER = 2000.0;
+        public static double PIDF_P = 20.0;
+    }
     
-    // Ball feed tuning
-    private static final double FEED_DURATION = 0.25;
+    @Configurable
+    public static class BallFeedConstants {
+        public static double FEED_DURATION = 0.25;
+        public static double REVERSE_DURATION = 0.1;  // Prevent double-feed
+        public static double HOLD_DURATION = 0.0;     // N/A for 22154
+    }
     
-    // Start pose tuning
-    private static final double DEFAULT_HEADING_DEG = 270.0;
-    
-    // ==================== CONFIGURATION APPLICATION ====================
-    
-    @Override
-    public void applyConfiguration() {
-        // Update robot identity
-        CharacterStats._00_robotIdentity.activeRobot = getDisplayName();
-        
-        // Copy shooter values into shared config
-        CharacterStats.shooterConfig.highVelocityRPM = HIGH_VELOCITY_RPM;
-        CharacterStats.shooterConfig.lowVelocityRPM = LOW_VELOCITY_RPM;
-        CharacterStats.shooterConfig.baselinePower = BASELINE_POWER;
-        CharacterStats.shooterConfig.pidfP = PIDF_P;
-        
-        // Copy ball feed values
-        CharacterStats.ballFeedConfig.feedDuration = FEED_DURATION;
-        
-        // Copy start pose values
-        CharacterStats.startPoseConfig.defaultHeadingDeg = DEFAULT_HEADING_DEG;
+    @Configurable
+    public static class StartPoseConstants {
+        public static double DEFAULT_HEADING_DEG = 270.0;
     }
     
     // ==================== IDENTITY ====================
@@ -63,7 +52,7 @@ public class Robot22154Abilities extends CharacterStats {
     
     @Override
     public String getShooterMotorRName() {
-        return "launchMotorR"; // This robot has dual shooters!
+        return "launchMotorR"; // Dual shooters
     }
     
     // ==================== BALL FEED CONFIGURATION ====================
@@ -80,14 +69,58 @@ public class Robot22154Abilities extends CharacterStats {
     
     @Override
     public BallFeedMode getBallFeedMode() {
-        return BallFeedMode.DUAL_INDEPENDENT;
+        return BallFeedMode.DUAL_INDEPENDENT;  // Independent L/R control
+    }
+    
+    @Override
+    public double getFeedReverseDuration() {
+        return ballFeedConfig.reverseDuration;
+    }
+    
+    @Override
+    public double getFeedHoldDuration() {
+        return ballFeedConfig.holdDuration;
+    }
+    
+    // ==================== INTAKE CONFIGURATION ====================
+    
+    @Override
+    public IntakeMode getIntakeMode() {
+        return IntakeMode.DUAL_INDEPENDENT_TOGGLE;  // Two stages, each toggles
+    }
+    
+    @Override
+    public String getIntakeOneMotorName() {
+        return "frontIntakeServo";  // Front stage
+    }
+    
+    @Override
+    public String getIntakeTwoMotorName() {
+        return "backIntakeServo";   // Back stage
+    }
+    
+    // ==================== COLOR SENSOR CONFIGURATION ====================
+    
+    @Override
+    public boolean hasColorSensors() {
+        return true;  // Has sensors for ball detection
+    }
+    
+    @Override
+    public String getLeftLaneColorSensorName() {
+        return "leftColorSensor";
+    }
+    
+    @Override
+    public String getRightLaneColorSensorName() {
+        return "rightColorSensor";
     }
     
     // ==================== LED CONFIGURATION ====================
     
     @Override
     public boolean hasLEDSystem() {
-        return true; // This robot has LEDs!
+        return true;  // Has LEDs for ball status display
     }
     
     @Override
@@ -104,7 +137,7 @@ public class Robot22154Abilities extends CharacterStats {
     
     @Override
     public boolean hasLifters() {
-        return true; // This robot has lifters!
+        return true;
     }
     
     @Override
@@ -121,21 +154,41 @@ public class Robot22154Abilities extends CharacterStats {
     
     @Override
     protected double getDefaultHeading() {
-        return Math.toRadians(startPoseConfig.defaultHeadingDeg);
+        return Math.toRadians(StartPoseConstants.DEFAULT_HEADING_DEG);
     }
     
     @Override
     public Pose getDefaultStartPose() {
-        return new Pose(56, 8, Math.toRadians(startPoseConfig.defaultHeadingDeg));
+        return new Pose(56, 8, Math.toRadians(StartPoseConstants.DEFAULT_HEADING_DEG));
     }
     
     @Override
     public Pose getRedNearPose() {
-        return new Pose(56, 8, Math.toRadians(startPoseConfig.defaultHeadingDeg));
+        return new Pose(56, 8, Math.toRadians(StartPoseConstants.DEFAULT_HEADING_DEG));
     }
     
     @Override
     public Pose getRedFarPose() {
-        return new Pose(56, 136, Math.toRadians(startPoseConfig.defaultHeadingDeg));
+        return new Pose(56, 136, Math.toRadians(StartPoseConstants.DEFAULT_HEADING_DEG));
+    }
+    
+    // ==================== CONFIGURATION APPLICATION ====================
+    
+    @Override
+    public void applyConfiguration() {
+        _00_robotIdentity.activeRobot = getDisplayName();
+        
+        shooterConfig.highVelocityRPM = ShooterConstants.HIGH_VELOCITY_RPM;
+        shooterConfig.lowVelocityRPM = ShooterConstants.LOW_VELOCITY_RPM;
+        shooterConfig.baselinePower = ShooterConstants.BASELINE_POWER;
+        shooterConfig.pidfP = ShooterConstants.PIDF_P;
+        
+        ballFeedConfig.feedDuration = BallFeedConstants.FEED_DURATION;
+        ballFeedConfig.reverseDuration = BallFeedConstants.REVERSE_DURATION;
+        ballFeedConfig.holdDuration = BallFeedConstants.HOLD_DURATION;
+        
+        intakeConfig.intakeModeName = getIntakeMode().name();
+        
+        startPoseConfig.defaultHeadingDeg = StartPoseConstants.DEFAULT_HEADING_DEG;
     }
 }

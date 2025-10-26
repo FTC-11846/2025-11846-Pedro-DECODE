@@ -19,6 +19,7 @@ public abstract class CharacterStats {
     public static RobotIdentity _00_robotIdentity = new RobotIdentity();
     public static ShooterConfig shooterConfig = new ShooterConfig();
     public static BallFeedConfig ballFeedConfig = new BallFeedConfig();
+    public static IntakeConfig intakeConfig = new IntakeConfig();
     public static StartPoseConfig startPoseConfig = new StartPoseConfig();
     
     // ==================== NESTED CONFIG CLASSES ====================
@@ -37,6 +38,12 @@ public abstract class CharacterStats {
     
     public static class BallFeedConfig {
         public double feedDuration = 0.25;
+        public double reverseDuration = 0.0;  // 22154: prevents double-feed
+        public double holdDuration = 0.0;      // 11846: gate hold time
+    }
+    
+    public static class IntakeConfig {
+        public String intakeModeName = "NONE";
     }
     
     public static class StartPoseConfig {
@@ -133,6 +140,68 @@ public abstract class CharacterStats {
         return ballFeedConfig.feedDuration;
     }
     
+    /**
+     * Get reverse duration in seconds (0 = no reverse)
+     * 22154: Reverses to prevent double-feed
+     * 11846: No reverse
+     */
+    public double getFeedReverseDuration() {
+        return ballFeedConfig.reverseDuration;
+    }
+    
+    /**
+     * Get hold duration in seconds (gate open time for ball to pass)
+     * 11846: Needs time for ball to pass gate
+     * 22154: N/A
+     */
+    public double getFeedHoldDuration() {
+        return ballFeedConfig.holdDuration;
+    }
+    
+    // ==================== INTAKE CONFIGURATION ====================
+    
+    /**
+     * Get the intake mode for this robot
+     */
+    public abstract IntakeMode getIntakeMode();
+    
+    /**
+     * Get the hardware name of intake one (primary/front)
+     */
+    public String getIntakeOneMotorName() {
+        return null;
+    }
+    
+    /**
+     * Get the hardware name of intake two (secondary/back)
+     */
+    public String getIntakeTwoMotorName() {
+        return null;
+    }
+    
+    // ==================== COLOR SENSOR CONFIGURATION ====================
+    
+    /**
+     * Does this robot have color sensors for ball detection?
+     */
+    public boolean hasColorSensors() {
+        return false;
+    }
+    
+    /**
+     * Get the hardware name of the left lane color sensor
+     */
+    public String getLeftLaneColorSensorName() {
+        return null;
+    }
+    
+    /**
+     * Get the hardware name of the right lane color sensor
+     */
+    public String getRightLaneColorSensorName() {
+        return null;
+    }
+    
     // ==================== LED CONFIGURATION ====================
     
     /**
@@ -188,14 +257,18 @@ public abstract class CharacterStats {
     
     /**
      * Does this robot have color sensors?
+     * @deprecated Use hasColorSensors() instead
      */
+    @Deprecated
     public boolean hasColorSensor() {
-        return false;
+        return hasColorSensors();
     }
     
     /**
      * Get the hardware name of the color sensor (null if no sensor)
+     * @deprecated Use getLeftLaneColorSensorName() or getRightLaneColorSensorName() instead
      */
+    @Deprecated
     public String getColorSensorName() {
         return null;
     }
@@ -263,5 +336,12 @@ public abstract class CharacterStats {
         SINGLE,              // One motor only
         DUAL_SYNCHRONIZED,   // Two motors, same power
         DUAL_INDEPENDENT     // Two motors, can control separately
+    }
+    
+    public enum IntakeMode {
+        NONE,                       // No intake hardware
+        SINGLE_TOGGLE,              // Single motor, toggle on/off
+        DUAL_INDEPENDENT_TOGGLE,    // Two motors, each toggles independently
+        SINGLE_CONTINUOUS           // Single motor, runs while button held
     }
 }

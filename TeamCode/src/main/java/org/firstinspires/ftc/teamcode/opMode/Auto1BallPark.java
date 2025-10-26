@@ -9,6 +9,9 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.subsystems.Vision;
 import org.firstinspires.ftc.teamcode.util.RobotState;
+import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
+
+import java.util.List;
 
 /**
  * Autonomous - 1 Ball Scoring with Park Fallback
@@ -35,11 +38,11 @@ import org.firstinspires.ftc.teamcode.util.RobotState;
  * - This example uses simple BezierLine paths
  */
 @Autonomous(name = "Auto - 1 Ball + Park", group = "Competition")
+@Configurable
 public class Auto1BallPark extends BaseOpMode {
     
     // ==================== AUTONOMOUS CONSTANTS (PEDRO COORDINATES) ====================
     
-    @Configurable
     public static class AutoConstants {
         // Shooting position (BLUE coordinates - auto-mirrored for RED)
         public static double SHOOT_X = 72.0;  // Mid-field (field center)
@@ -121,15 +124,54 @@ public class Auto1BallPark extends BaseOpMode {
     
     // ==================== MAIN LOOP ====================
     
-    @Override
-    public void loop() {
-        // Update subsystems
-        shooter.periodic();
-        ballFeed.periodic();
-        follower.update();
-        
-        // Periodic relocalization (if enabled)
-        // performRelocalization();  // Uncomment when calculatePoseFromTag implemented
+
+        @Override
+        public void loop() {
+            // Update follower
+            follower.update();
+            follower.debug();
+
+            // Relocalize automatically every 0.5s (rate-limited in method)
+            relocalize();
+
+            // Update subsystems
+            shooter.periodic();
+            ballFeed.periodic();
+
+            // Vision telemetry
+            List<AprilTagDetection> detections = vision.getDetections();
+            telemetryM.debug("=== VISION ===");
+            telemetryM.debug("Tags: " + detections.size());
+            for (AprilTagDetection d : detections) {
+                if (vision.isValidDetection(d)) {
+                    telemetryM.debug(String.format("  Tag %d: %.1fin", d.id, d.ftcPose.range));
+                }
+            }
+            telemetryM.debug("");
+
+            // Auto state telemetry
+            telemetryM.debug("=== AUTO STATE ===");
+            telemetryM.debug("Follower busy: " + follower.isBusy());
+            telemetryM.debug("");
+
+            telemetryM.update(telemetry);
+
+
+// ==================== NOTES ====================
+        /*
+         * Relocalization Integration:
+         * - relocalize() called automatically in loop()
+         * - Rate-limited to every 0.5s (configurable in BaseOpMode.relocalization.rateLimitSeconds)
+         * - Uses any visible AprilTag (goal or motif)
+         * - Blends vision correction with odometry (30% vision, 70% odo by default)
+         * - Only applies correction if error is reasonable (<24 inches by default)
+         *
+         * All configuration via BaseOpMode.relocalization:
+         * - enabled: true/false
+         * - rateLimitSeconds: 0.5 (default)
+         * - blendRatio: 0.3 (30% vision)
+         * - maxPoseError: 24.0 inches
+         */
         
         // Check if stuck (only during movement states)
         if (currentState == AutoState.MOVE_TO_SHOOT || currentState == AutoState.MOVE_TO_PARK) {

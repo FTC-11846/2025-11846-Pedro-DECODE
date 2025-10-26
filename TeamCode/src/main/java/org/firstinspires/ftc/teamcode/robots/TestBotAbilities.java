@@ -1,43 +1,27 @@
 package org.firstinspires.ftc.teamcode.robots;
 
+import com.bylazar.configurables.annotations.Configurable;
+
 /**
- * TestBotAbilities - Configuration for the development/testing robot
- * Used for alpha/beta testing of major features before competition
+ * TestBotAbilities - Configuration for basic test robot
+ * Features: Single shooter, single ball feed only
+ * NO intake, NO color sensors, NO LEDs, NO lifters
  */
 public class TestBotAbilities extends CharacterStats {
     
-    // ==================== PRIVATE TUNING CONSTANTS ====================
+    // ==================== TUNABLE CONSTANTS ====================
     
-    // Shooter tuning values
-    private static final double HIGH_VELOCITY_RPM = 5500;
-    private static final double LOW_VELOCITY_RPM = 1500;
-    private static final double BASELINE_POWER = 395.0;
-    private static final double PIDF_P = 10.0;
+    @Configurable
+    public static class ShooterConstants {
+        public static double HIGH_VELOCITY_RPM = 3000;
+        public static double LOW_VELOCITY_RPM = 1000;
+        public static double BASELINE_POWER = 1500.0;
+        public static double PIDF_P = 15.0;
+    }
     
-    // Ball feed tuning
-    private static final double FEED_DURATION = 0.25;
-    
-    // Start pose tuning (uses default 0°)
-    private static final double DEFAULT_HEADING_DEG = 0.0;
-    
-    // ==================== CONFIGURATION APPLICATION ====================
-    
-    @Override
-    public void applyConfiguration() {
-        // Update robot identity
-        CharacterStats._00_robotIdentity.activeRobot = getDisplayName();
-        
-        // Copy shooter values into shared config
-        CharacterStats.shooterConfig.highVelocityRPM = HIGH_VELOCITY_RPM;
-        CharacterStats.shooterConfig.lowVelocityRPM = LOW_VELOCITY_RPM;
-        CharacterStats.shooterConfig.baselinePower = BASELINE_POWER;
-        CharacterStats.shooterConfig.pidfP = PIDF_P;
-        
-        // Copy ball feed values
-        CharacterStats.ballFeedConfig.feedDuration = FEED_DURATION;
-        
-        // Copy start pose values
-        CharacterStats.startPoseConfig.defaultHeadingDeg = DEFAULT_HEADING_DEG;
+    @Configurable
+    public static class BallFeedConstants {
+        public static double FEED_DURATION = 0.25;
     }
     
     // ==================== IDENTITY ====================
@@ -61,23 +45,67 @@ public class TestBotAbilities extends CharacterStats {
     
     @Override
     public String getShooterMotorRName() {
-        return null; // TestBot has single shooter
+        return null; // Single shooter
     }
     
     // ==================== BALL FEED CONFIGURATION ====================
     
     @Override
     public String getBallFeedMotorLName() {
-        return "feedServoL";
+        return "feedServo";
     }
     
     @Override
     public String getBallFeedMotorRName() {
-        return "feedServoR";
+        return null; // Single feed motor
     }
     
     @Override
     public BallFeedMode getBallFeedMode() {
-        return BallFeedMode.DUAL_SYNCHRONIZED;
+        return BallFeedMode.SINGLE;
+    }
+    
+    // ==================== INTAKE CONFIGURATION ====================
+    
+    @Override
+    public IntakeMode getIntakeMode() {
+        return IntakeMode.NONE;  // No intake hardware
+    }
+    
+    // ==================== COLOR SENSOR CONFIGURATION ====================
+    
+    @Override
+    public boolean hasColorSensors() {
+        return false;  // No color sensors
+    }
+    
+    // ==================== LED CONFIGURATION ====================
+    
+    @Override
+    public boolean hasLEDSystem() {
+        return false;  // No LEDs
+    }
+    
+    // ==================== STARTING POSES ====================
+    // TestBot uses default poses from base class
+    
+    // ==================== CONFIGURATION APPLICATION ====================
+    
+    @Override
+    public void applyConfiguration() {
+        _00_robotIdentity.activeRobot = getDisplayName();
+        
+        shooterConfig.highVelocityRPM = ShooterConstants.HIGH_VELOCITY_RPM;
+        shooterConfig.lowVelocityRPM = ShooterConstants.LOW_VELOCITY_RPM;
+        shooterConfig.baselinePower = ShooterConstants.BASELINE_POWER;
+        shooterConfig.pidfP = ShooterConstants.PIDF_P;
+        
+        ballFeedConfig.feedDuration = BallFeedConstants.FEED_DURATION;
+        ballFeedConfig.reverseDuration = 0.0;
+        ballFeedConfig.holdDuration = 0.0;
+        
+        intakeConfig.intakeModeName = getIntakeMode().name();
+        
+        startPoseConfig.defaultHeadingDeg = 0.0;
     }
 }
