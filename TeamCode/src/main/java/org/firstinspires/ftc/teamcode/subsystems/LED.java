@@ -123,14 +123,11 @@ public class LED {
      */
     public void showLeftLaneColor(ColorSensors.BallColor color) {
         switch (color) {
-            case RED:
-                servoL.setPosition(ledColors.RED);
+            case PURPLE:
+                servoL.setPosition(ledColors.PURPLE);
                 break;
-            case BLUE:
-                servoL.setPosition(ledColors.BLUE);
-                break;
-            case YELLOW:
-                servoL.setPosition(ledColors.YELLOW);
+            case GREEN:
+                servoL.setPosition(ledColors.GREEN);
                 break;
             case NONE:
                 servoL.setPosition(ledColors.OFF);
@@ -143,14 +140,11 @@ public class LED {
      */
     public void showRightLaneColor(ColorSensors.BallColor color) {
         switch (color) {
-            case RED:
-                servoR.setPosition(ledColors.RED);
+            case PURPLE:
+                servoR.setPosition(ledColors.PURPLE);
                 break;
-            case BLUE:
-                servoR.setPosition(ledColors.BLUE);
-                break;
-            case YELLOW:
-                servoR.setPosition(ledColors.YELLOW);
+            case GREEN:
+                servoR.setPosition(ledColors.GREEN);
                 break;
             case NONE:
                 servoR.setPosition(ledColors.OFF);
@@ -162,16 +156,16 @@ public class LED {
      * Show that both lanes have correct colors (ready to shoot)
      */
     public void showBothLanesReady() {
-        servoL.setPosition(ledColors.GREEN);
-        servoR.setPosition(ledColors.GREEN);
+        servoL.setPosition(ledColors.YELLOW);
+        servoR.setPosition(ledColors.YELLOW);
     }
     
     /**
      * Show error state (wrong colors detected)
      */
     public void showError() {
-        servoL.setPosition(ledColors.PURPLE);
-        servoR.setPosition(ledColors.PURPLE);
+        servoL.setPosition(ledColors.RED);
+        servoR.setPosition(ledColors.RED);
     }
     
     // ==================== INDEPENDENT CONTROL ====================

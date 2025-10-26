@@ -77,7 +77,11 @@ public class Intake {
             case SINGLE_CONTINUOUS:
                 // Single DCMotorEx
                 intakeOne = hardwareMap.get(DcMotorEx.class, stats.getIntakeOneMotorName());
-                ((DcMotorEx) intakeOne).setDirection(DcMotorSimple.Direction.REVERSE);
+                if(stats.getShortName() == "TB"){
+                    ((DcMotorEx) intakeOne).setDirection(DcMotorSimple.Direction.REVERSE);
+                } else {
+                    ((DcMotorEx) intakeOne).setDirection(DcMotorSimple.Direction.FORWARD);
+                }
                 ((DcMotorEx) intakeOne).setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
                 intakeTwo = null;
                 break;

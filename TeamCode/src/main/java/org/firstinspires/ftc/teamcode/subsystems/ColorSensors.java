@@ -42,9 +42,8 @@ public class ColorSensors {
     // ==================== ENUMS ====================
     
     public enum BallColor {
-        RED,
-        BLUE,
-        YELLOW,
+        GREEN,
+        PURPLE,
         NONE
     }
     
@@ -54,10 +53,16 @@ public class ColorSensors {
     private final CharacterStats stats;
     
     @IgnoreConfigurable
-    private final NormalizedColorSensor leftSensor;
+    private final NormalizedColorSensor frontLeftSensor;
     
     @IgnoreConfigurable
-    private final NormalizedColorSensor rightSensor;
+    private final NormalizedColorSensor frontRightSensor;
+
+    @IgnoreConfigurable
+    private final NormalizedColorSensor backLeftSensor;
+
+    @IgnoreConfigurable
+    private final NormalizedColorSensor backRightSensor;
     
     // ==================== CONSTRUCTOR ====================
     
@@ -78,54 +83,99 @@ public class ColorSensors {
             throw new IllegalStateException(stats.getDisplayName() + " does not have color sensors!");
         }
         
-        leftSensor = hardwareMap.get(NormalizedColorSensor.class, stats.getLeftLaneColorSensorName());
-        rightSensor = hardwareMap.get(NormalizedColorSensor.class, stats.getRightLaneColorSensorName());
+        frontLeftSensor = hardwareMap.get(NormalizedColorSensor.class, stats.getFrontLeftLaneColorSensorName());
+        frontRightSensor = hardwareMap.get(NormalizedColorSensor.class, stats.getFrontRightLaneColorSensorName());
+        backLeftSensor = hardwareMap.get(NormalizedColorSensor.class, stats.getBackLeftLaneColorSensorName());
+        backRightSensor = hardwareMap.get(NormalizedColorSensor.class, stats.getBackRightLaneColorSensorName());
     }
     
     // ==================== PUBLIC DETECTION METHODS ====================
     
     /**
-     * Detect ball color in left lane
+     * Detect ball color in the front of the left lane
      */
-    public BallColor detectLeftLane() {
-        return detectColor(leftSensor);
+    public BallColor detectFrontLeftLane() {
+        return detectColor(frontLeftSensor);
     }
     
     /**
-     * Detect ball color in right lane
+     * Detect ball color in the front of right lane
      */
-    public BallColor detectRightLane() {
-        return detectColor(rightSensor);
+    public BallColor detectFrontRightLane() {
+        return detectColor(frontRightSensor);
+    }
+
+    /**
+     * Detect ball color in the back of the left lane
+     */
+    public BallColor detectBackLeftLane() {
+        return detectColor(backLeftSensor);
+    }
+
+    /**
+     * Detect ball color in the back of right lane
+     */
+    public BallColor detectBackRightLane() {
+        return detectColor(backRightSensor);
+    }
+
+    /**
+     * Get raw RGB values from front left sensor (for tuning)
+     */
+    public NormalizedRGBA getFrontLeftRGBA() {
+        return frontLeftSensor.getNormalizedColors();
     }
     
     /**
-     * Get raw RGB values from left sensor (for tuning)
+     * Get raw RGB values from front right sensor (for tuning)
      */
-    public NormalizedRGBA getLeftRGBA() {
-        return leftSensor.getNormalizedColors();
+    public NormalizedRGBA getFrontRightRGBA() {
+        return frontRightSensor.getNormalizedColors();
+    }
+
+    /**
+     * Get raw RGB values from back left sensor (for tuning)
+     */
+    public NormalizedRGBA getBackLeftRGBA() {
+        return backLeftSensor.getNormalizedColors();
+    }
+
+    /**
+     * Get raw RGB values from back right sensor (for tuning)
+     */
+    public NormalizedRGBA getBackRightRGBA() {
+        return backRightSensor.getNormalizedColors();
+    }
+
+    /**
+     * Get HSV values from front left sensor (for tuning)
+     */
+    public float[] getFrontLeftHSV() {
+        return rgbaToHSV(frontLeftSensor.getNormalizedColors());
     }
     
     /**
-     * Get raw RGB values from right sensor (for tuning)
+     * Get HSV values from front right sensor (for tuning)
      */
-    public NormalizedRGBA getRightRGBA() {
-        return rightSensor.getNormalizedColors();
+    public float[] getFrontRightHSV() {
+        return rgbaToHSV(frontRightSensor.getNormalizedColors());
     }
-    
+
     /**
-     * Get HSV values from left sensor (for tuning)
+     * Get HSV values from back left sensor (for tuning)
      */
-    public float[] getLeftHSV() {
-        return rgbaToHSV(leftSensor.getNormalizedColors());
+    public float[] getBackLeftHSV() {
+        return rgbaToHSV(backLeftSensor.getNormalizedColors());
     }
-    
+
     /**
-     * Get HSV values from right sensor (for tuning)
+     * Get HSV values from back right sensor (for tuning)
      */
-    public float[] getRightHSV() {
-        return rgbaToHSV(rightSensor.getNormalizedColors());
+    public float[] getBackRightHSV() {
+        return rgbaToHSV(backRightSensor.getNormalizedColors());
     }
-    
+
+
     // ==================== GETTERS ====================
     
     public String getRobotName() {
@@ -152,12 +202,13 @@ public class ColorSensors {
         }
         
         // Check hue ranges
+        //TODO FIX THIS USING ACTUAL COLOR THRESHOLDS FOR THE BALLS
         if (isInRange(hue, colorThresholds.redHueMin, colorThresholds.redHueMax)) {
-            return BallColor.RED;
+            return BallColor.PURPLE;
         } else if (isInRange(hue, colorThresholds.blueHueMin, colorThresholds.blueHueMax)) {
-            return BallColor.BLUE;
+            return BallColor.GREEN;
         } else if (isInRange(hue, colorThresholds.yellowHueMin, colorThresholds.yellowHueMax)) {
-            return BallColor.YELLOW;
+            return BallColor.NONE;
         }
         
         return BallColor.NONE;

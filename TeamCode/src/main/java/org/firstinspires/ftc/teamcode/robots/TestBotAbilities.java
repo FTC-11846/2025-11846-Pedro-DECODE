@@ -10,16 +10,13 @@ import com.bylazar.configurables.annotations.Configurable;
 public class TestBotAbilities extends CharacterStats {
     
     // ==================== TUNABLE CONSTANTS ====================
-    
-    @Configurable
     public static class ShooterConstants {
         public static double HIGH_VELOCITY_RPM = 3000;
         public static double LOW_VELOCITY_RPM = 1000;
         public static double BASELINE_POWER = 1500.0;
         public static double PIDF_P = 15.0;
     }
-    
-    @Configurable
+
     public static class BallFeedConstants {
         public static double FEED_DURATION = 0.25;
     }
@@ -52,24 +49,29 @@ public class TestBotAbilities extends CharacterStats {
     
     @Override
     public String getBallFeedMotorLName() {
-        return "feedServo";
+        return "feedServoL";
     }
     
     @Override
     public String getBallFeedMotorRName() {
-        return null; // Single feed motor
+        return "feedServoR";
     }
     
     @Override
     public BallFeedMode getBallFeedMode() {
-        return BallFeedMode.SINGLE;
+        return BallFeedMode.DUAL_SYNCHRONIZED;
     }
     
     // ==================== INTAKE CONFIGURATION ====================
     
     @Override
     public IntakeMode getIntakeMode() {
-        return IntakeMode.NONE;  // No intake hardware
+        return IntakeMode.SINGLE_TOGGLE;  // No intake hardware
+    }
+
+    @Override
+    public String getIntakeOneMotorName() {
+        return "intakeMotor";  // Front stage
     }
     
     // ==================== COLOR SENSOR CONFIGURATION ====================

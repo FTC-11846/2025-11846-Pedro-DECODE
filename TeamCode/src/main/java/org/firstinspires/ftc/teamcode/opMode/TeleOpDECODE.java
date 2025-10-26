@@ -1,7 +1,5 @@
 package org.firstinspires.ftc.teamcode.opMode;
 
-import static org.firstinspires.ftc.teamcode.pedroPathing.Tuning.draw;
-
 import android.annotation.SuppressLint;
 
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -45,8 +43,11 @@ public class TeleOpDECODE extends BaseOpMode {
     private String lastAutoAimMessage = "";
 
     // Color sensor state for telemetry
-    private ColorSensors.BallColor leftLaneColor = ColorSensors.BallColor.NONE;
-    private ColorSensors.BallColor rightLaneColor = ColorSensors.BallColor.NONE;
+    private ColorSensors.BallColor frontLeftLaneColor = ColorSensors.BallColor.NONE;
+    private ColorSensors.BallColor frontRightLaneColor = ColorSensors.BallColor.NONE;
+    private ColorSensors.BallColor backLeftLaneColor = ColorSensors.BallColor.NONE;
+    private ColorSensors.BallColor backRightLaneColor = ColorSensors.BallColor.NONE;
+
 
     // ==================== BUTTON STATE TRACKING ====================
 
@@ -246,16 +247,25 @@ public class TeleOpDECODE extends BaseOpMode {
     // ==================== GP2: INDEPENDENT BALL FEED CONTROLS ====================
 
     private void handleBallFeedControls() {
-        // Left lane feed (GP2 Left Trigger)
-        if (gamepad2.left_trigger > 0.5 && gamepadRateLimit.milliseconds() > RATE_LIMIT_MS) {
-            ballFeed.feedLeft();
-            gamepadRateLimit.reset();
-        }
+        if(ballFeed.getMode() == CharacterStats.BallFeedMode.DUAL_SYNCHRONIZED){
+            // Left lane feed (GP2 Left Trigger)
+            if (gamepad2.left_trigger > 0.5 && gamepadRateLimit.milliseconds() > RATE_LIMIT_MS || gamepad2.right_trigger > 0.5 && gamepadRateLimit.milliseconds() > RATE_LIMIT_MS) {
+                ballFeed.feedLeft();
+                ballFeed.feedRight();
+                gamepadRateLimit.reset();
+            }
+        } else {
+            // Left lane feed (GP2 Left Trigger)
+            if (gamepad2.left_trigger > 0.5 && gamepadRateLimit.milliseconds() > RATE_LIMIT_MS) {
+                ballFeed.feedLeft();
+                gamepadRateLimit.reset();
+            }
 
-        // Right lane feed (GP2 Right Trigger)
-        if (gamepad2.right_trigger > 0.5 && gamepadRateLimit.milliseconds() > RATE_LIMIT_MS) {
-            ballFeed.feedRight();
-            gamepadRateLimit.reset();
+            // Right lane feed (GP2 Right Trigger)
+            if (gamepad2.right_trigger > 0.5 && gamepadRateLimit.milliseconds() > RATE_LIMIT_MS) {
+                ballFeed.feedRight();
+                gamepadRateLimit.reset();
+            }
         }
     }
 
@@ -265,13 +275,16 @@ public class TeleOpDECODE extends BaseOpMode {
         if (colorSensors == null) return;  // Robot doesn't have color sensors
 
         // Detect colors continuously
-        leftLaneColor = colorSensors.detectLeftLane();
-        rightLaneColor = colorSensors.detectRightLane();
+        frontLeftLaneColor = colorSensors.detectFrontLeftLane();
+        frontRightLaneColor = colorSensors.detectFrontRightLane();
+        backLeftLaneColor = colorSensors.detectBackLeftLane();
+        backRightLaneColor = colorSensors.detectBackRightLane();
 
         // Update LEDs automatically if robot has them
         if (led != null) {
-            led.showLeftLaneColor(leftLaneColor);
-            led.showRightLaneColor(rightLaneColor);
+            //TODO Change function to take into account both color sensors on each side
+            led.showLeftLaneColor(backLeftLaneColor);
+            led.showRightLaneColor(backRightLaneColor);
         }
     }
 
@@ -374,8 +387,10 @@ public class TeleOpDECODE extends BaseOpMode {
         // === BALL DETECTION ===
         if (colorSensors != null) {
             telemetryM.debug("=== BALL DETECTION ===");
-            telemetryM.debug("Left Lane: " + leftLaneColor);
-            telemetryM.debug("Right Lane: " + rightLaneColor);
+            telemetryM.debug("Front Left Lane: " + frontLeftLaneColor);
+            telemetryM.debug("Front Right Lane: " + frontRightLaneColor);
+            telemetryM.debug("Back Left Lane: " + backLeftLaneColor);
+            telemetryM.debug("Back Right Lane: " + backRightLaneColor);
             telemetryM.debug("");
         }
 

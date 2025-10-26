@@ -107,13 +107,23 @@ public class Robot22154Abilities extends CharacterStats {
     }
     
     @Override
-    public String getLeftLaneColorSensorName() {
-        return "leftColorSensor";
+    public String getFrontLeftLaneColorSensorName() {
+        return "frontLeftColorSensor";
     }
     
     @Override
-    public String getRightLaneColorSensorName() {
-        return "rightColorSensor";
+    public String getFrontRightLaneColorSensorName() {
+        return "frontRightColorSensor";
+    }
+
+    @Override
+    public String getBackLeftLaneColorSensorName() {
+        return "backLeftColorSensor";
+    }
+
+    @Override
+    public String getBackRightLaneColorSensorName() {
+        return "backRightColorSensor";
     }
     
     // ==================== LED CONFIGURATION ====================

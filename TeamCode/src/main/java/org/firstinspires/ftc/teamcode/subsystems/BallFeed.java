@@ -332,7 +332,6 @@ public class BallFeed {
                 position = 0.5;
                 break;
         }
-        
         motorL.setPosition(position);
     }
     
@@ -358,8 +357,11 @@ public class BallFeed {
                 position = 0.5;
                 break;
         }
-        
-        motorR.setPosition(position);
+        if(stats.getShortName() == "TB"){
+            motorR.setPosition(-position);
+        } else {
+            motorR.setPosition(position);
+        }
     }
 
 //    private void setMotorPowers(double leftPower, double rightPower) {

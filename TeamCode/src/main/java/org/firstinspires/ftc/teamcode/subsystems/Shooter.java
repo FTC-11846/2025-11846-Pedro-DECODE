@@ -35,8 +35,8 @@ public class Shooter {
         public double headingPGain = 0.03;
         public double maxTrackingRotation = 0.3;
         public double headingDeadbandDeg = 2.0;
-        public double singleShotDuration = 0.5;
-        public double autoAimSpinDownTime = 3.0;
+        public double singleShotDuration = 120.0;
+        public double autoAimSpinDownTime = 120.0;
         public double overrideThreshold = 0.15;
         public double tagLossTimeout = 1.0;
     }
@@ -96,8 +96,11 @@ public class Shooter {
         
         // Initialize left/primary motor (all robots have this)
         shooterMotorL = hardwareMap.get(DcMotorEx.class, stats.getShooterMotorLName());
-        shooterMotorL.setDirection(DcMotorSimple.Direction.REVERSE);
-        
+        if(stats.getShortName() == "TB"){
+            shooterMotorL.setDirection(DcMotorSimple.Direction.FORWARD);
+        }else{
+            shooterMotorL.setDirection(DcMotorSimple.Direction.REVERSE);
+        }
         if (pidf.debugRunWithoutEncoder) {
             shooterMotorL.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         } else {

@@ -189,16 +189,30 @@ public abstract class CharacterStats {
     }
     
     /**
-     * Get the hardware name of the left lane color sensor
+     * Get the hardware name of the front left lane color sensor
      */
-    public String getLeftLaneColorSensorName() {
+    public String getFrontLeftLaneColorSensorName() {
         return null;
     }
     
     /**
+     * Get the hardware name of the front right lane color sensor
+     */
+    public String getFrontRightLaneColorSensorName() {
+        return null;
+    }
+
+    /**
+     * Get the hardware name of the back left lane color sensor
+     */
+    public String getBackLeftLaneColorSensorName() {
+        return null;
+    }
+
+    /**
      * Get the hardware name of the right lane color sensor
      */
-    public String getRightLaneColorSensorName() {
+    public String getBackRightLaneColorSensorName() {
         return null;
     }
     
