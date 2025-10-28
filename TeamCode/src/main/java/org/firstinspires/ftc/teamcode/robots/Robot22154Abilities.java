@@ -22,7 +22,7 @@ public class Robot22154Abilities extends CharacterStats {
     @Configurable
     public static class BallFeedConstants {
         public static double FEED_DURATION = 0.25;
-        public static double REVERSE_DURATION = 0.1;  // Prevent double-feed
+        public static double REVERSE_DURATION = 0.0;  // Prevent double-feed
         public static double HOLD_DURATION = 0.0;     // N/A for 22154
     }
     
