@@ -54,6 +54,14 @@ public abstract class BaseOpMode extends OpMode {
         public double maxPoseError = 24.0;        // Inches - reject if too far off
         public double blendRatio = 0.3;           // 30% vision, 70% odometry
         public double rateLimitSeconds = 0.5;     // Time between relocalization attempts
+
+        // Diagnostic tracking
+        public int updateAttempts = 0;
+        public int updateSuccesses = 0;
+        public int updateFailedNoTag = 0;
+        public int updateFailedBadPose = 0;
+        public double totalCorrectionDistance = 0;
+        public double totalCorrectionHeading = 0;
     }
 
     public static RelocalizationConfig relocalization = new RelocalizationConfig();
@@ -349,63 +357,85 @@ public abstract class BaseOpMode extends OpMode {
      *
      * Uses ONLY goal tags (20 Blue, 24 Red) - NOT motif tags
      * Auto-rate-limited and applies blended pose correction
+     * relocalize() now also tracks success/fail stats for tele-output!
      */
+
     protected void relocalize() {
         if (!relocalization.enabled) return;
         if (relocalizationTimer.seconds() < relocalization.rateLimitSeconds) return;
         if (vision == null) return;
 
-        // Find best goal tag (prefer closer for accuracy)
+        relocalization.updateAttempts++;
+
         AprilTagDetection bestTag = null;
         double bestRange = Double.MAX_VALUE;
 
         for (AprilTagDetection detection : vision.getDetections()) {
             if (!vision.isValidDetection(detection)) continue;
-
-            // ONLY use goal tags (20 Blue, 24 Red)
             if (detection.id != Vision.tagIds.blueGoalTagId &&
                     detection.id != Vision.tagIds.redGoalTagId) {
                 continue;
             }
-
-            // Prefer closer tags for better accuracy
             if (detection.ftcPose.range < bestRange) {
                 bestTag = detection;
                 bestRange = detection.ftcPose.range;
             }
         }
 
-        if (bestTag == null) return;
+        if (bestTag == null) {
+            relocalization.updateFailedNoTag++;
+            return;
+        }
 
-        // Calculate pose from tag
         Pose visionPose = calculatePoseFromTag(bestTag);
-        if (visionPose == null) return;
+        if (visionPose == null) {
+            relocalization.updateFailedBadPose++;
+            return;
+        }
 
         Pose currentPose = follower.getPose();
-
-        // Check if error is reasonable
         double error = Math.hypot(
                 visionPose.getX() - currentPose.getX(),
                 visionPose.getY() - currentPose.getY()
         );
 
         if (error > relocalization.maxPoseError) {
-            return; // Error too large, likely bad detection
+            relocalization.updateFailedBadPose++;
+            return;
         }
 
-        // Blend poses
+        // Track correction amount
+        relocalization.totalCorrectionDistance += error;
+
+        // Apply blend
         double visionWeight = relocalization.blendRatio;
         double odoWeight = 1.0 - visionWeight;
-
         Pose blendedPose = new Pose(
                 currentPose.getX() * odoWeight + visionPose.getX() * visionWeight,
                 currentPose.getY() * odoWeight + visionPose.getY() * visionWeight,
-                currentPose.getHeading() // Trust odometry heading
+                currentPose.getHeading()
         );
 
-        // Apply correction
         follower.setPose(blendedPose);
+        relocalization.updateSuccesses++;
         relocalizationTimer.reset();
+    }
+
+////    **Add telemetry display method for relocalization Stats!**
+    protected void displayRelocalizationStats() {
+        int total = relocalization.updateAttempts;
+        if (total == 0) return;  // No updates yet
+
+        double successRate = 100.0 * relocalization.updateSuccesses / total;
+        double noTagRate = 100.0 * relocalization.updateFailedNoTag / total;
+        double badPoseRate = 100.0 * relocalization.updateFailedBadPose / total;
+        double avgCorrection = relocalization.updateSuccesses > 0 ?
+                relocalization.totalCorrectionDistance / relocalization.updateSuccesses : 0;
+
+        telemetryM.debug("=== RELOCALIZATION ===");
+        telemetryM.debug(String.format("Updates: %d (%.0f%% success)", total, successRate));
+        telemetryM.debug(String.format("No Tag: %.0f%% | Bad Pose: %.0f%%", noTagRate, badPoseRate));
+        telemetryM.debug(String.format("Avg Correction: %.1f in", avgCorrection));
     }
 
     /**

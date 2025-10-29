@@ -4,6 +4,7 @@ import static org.firstinspires.ftc.teamcode.pedroPathing.Tuning.draw;
 
 import android.annotation.SuppressLint;
 
+import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
@@ -99,8 +100,8 @@ public class TeleOpDECODE extends BaseOpMode {
         handleColorSensorDisplay();     // Automatic color detection
         handleEmergencyStop();          // GP1+GP2 B button
 
-        // Auto-aim timeout handling
-        handleTrackingTimeout();
+//        // Auto-aim timeout handling
+//        handleTrackingTimeout();  @Deprecated, should be deleted when the method is
 
         // Display telemetry
         displayTelemetry();
@@ -137,39 +138,71 @@ public class TeleOpDECODE extends BaseOpMode {
             rotationInput = -gamepad1.right_stick_x;
         }
 
-        // Field-relative by default, robot-relative if holding left bumper
-        boolean fieldRelative = !gamepad1.left_bumper;
-        follower.setTeleOpDrive(
-                -gamepad1.left_stick_y,
-                -gamepad1.left_stick_x,
-                rotationInput,
-                fieldRelative
-        );
+        /**  We haven't used this in over a month, delete on next code cleanout! */
+//        // Field-relative by default, robot-relative if holding left bumper
+//        boolean fieldRelative = !gamepad1.left_bumper;
+//        follower.setTeleOpDrive(
+//                -gamepad1.left_stick_y,
+//                -gamepad1.left_stick_x,
+//                rotationInput,
+//                fieldRelative
+//        );
     }
 
     /**
      * Calculate rotation power to track goal using P controller
      */
+    /**
+     * Calculate rotation power to track goal using P controller
+     * Uses AprilTag when visible, falls back to localization pose
+     */
     private double calculateTrackingRotation() {
         if (!trackingEnabled) return 0;
 
         Vision.AutoAimResult result = vision.getAutoAimData();
-        if (!result.success) {
-            trackingEnabled = false;
-            singleShotMode = false;
-            lastAutoAimMessage = "Tracking lost - no goal visible";
-            return 0;
+
+        double headingError;
+
+        if (result.success) {
+            // Tag visible - use direct measurement
+            shooter.setAutoAimVelocity(result.distanceInches, result.tagId);
+            autoAimSpinDownTimer.reset();
+            headingError = result.bearingDegrees;
+            lastAutoAimMessage = result.message;
+        } else {
+            // Tag lost - calculate from localization pose
+            Pose robotPose = follower.getPose();
+            Pose goalPose = getGoalPose();  // Based on alliance
+
+            double dx = goalPose.getX() - robotPose.getX();
+            double dy = goalPose.getY() - robotPose.getY();
+
+            double bearingToGoal = Math.atan2(dy, dx);
+            double currentHeading = robotPose.getHeading();
+
+            // Calculate heading error in degrees
+            double errorRad = bearingToGoal - currentHeading;
+            // Normalize to [-π, π]
+            while (errorRad > Math.PI) errorRad -= 2 * Math.PI;
+            while (errorRad < -Math.PI) errorRad += 2 * Math.PI;
+
+            headingError = Math.toDegrees(errorRad);
+
+            // Calculate distance for shooter velocity
+            double distance = Math.hypot(dx, dy);
+            shooter.setAutoAimVelocity(distance,
+                    alliance.isBlue() ? Vision.tagIds.blueGoalTagId : Vision.tagIds.redGoalTagId);
+
+            lastAutoAimMessage = String.format("Tracking via pose (%.1f in, %.1f°)",
+                    distance, headingError);
         }
 
-        shooter.setAutoAimVelocity(result.distanceInches, result.tagId);
-        autoAimSpinDownTimer.reset();
-
-        double headingError = result.bearingDegrees;
-
+        // Deadband
         if (Math.abs(headingError) < Shooter.autoAim.headingDeadbandDeg) {
             return 0;
         }
 
+        // P controller
         double correction = headingError * Shooter.autoAim.headingPGain;
         correction = Math.max(-Shooter.autoAim.maxTrackingRotation,
                 Math.min(Shooter.autoAim.maxTrackingRotation, correction));
@@ -177,7 +210,22 @@ public class TeleOpDECODE extends BaseOpMode {
         return correction;
     }
 
-    // ==================== GP1: SHOOTER CONTROLS (MOVED FROM GP2!) ====================
+    /**
+     * Get goal pose based on current alliance
+     */
+    private Pose getGoalPose() {
+        if (alliance.isBlue()) {
+            return new Pose(Vision.goalPositions.blueGoalX,
+                    Vision.goalPositions.blueGoalY,
+                    Math.toRadians(180));
+        } else {
+            return new Pose(Vision.goalPositions.redGoalX,
+                    Vision.goalPositions.redGoalY,
+                    0);
+        }
+    }
+
+    // ==================== GP1: SHOOTER Motor CONTROLS (MOVED FROM GP2!) ====================
 
     private void handleShooterControls() {
         // Auto-aim (GP1 Left Bumper) - single-shot mode
@@ -201,21 +249,45 @@ public class TeleOpDECODE extends BaseOpMode {
         gp1_dpadRightLast = gamepad1.dpad_right;
     }
 
+    /**
+     *  This function is the entry point to AutoAim w/ AutoTracking
+     *  Recently enhanced (Oct-29) to fully rely on localization for activation
+     *  or whenever goalTag is lost
+     */
     private void performSingleShotAutoAim() {
         Vision.AutoAimResult result = vision.getAutoAimData();
 
         if (result.success) {
+            // Tag visible - use direct measurement
             shooter.setAutoAimVelocity(result.distanceInches, result.tagId);
-            trackingEnabled = true;
-            singleShotMode = true;
-            trackingTimer.reset();
-            autoAimSpinDownTimer.reset();
-            lastAutoAimMessage = result.message + " - Single-shot tracking";
+            lastAutoAimMessage = result.message + " - Tracking";
         } else {
-            lastAutoAimMessage = result.message;
+            // No tag - calculate from pose
+            Pose robotPose = follower.getPose();
+            Pose goalPose = getGoalPose();
+
+            double dx = goalPose.getX() - robotPose.getX();
+            double dy = goalPose.getY() - robotPose.getY();
+            double distance = Math.hypot(dx, dy);
+
+            shooter.setAutoAimVelocity(distance,
+                    alliance.isBlue() ? Vision.tagIds.blueGoalTagId : Vision.tagIds.redGoalTagId);
+
+            lastAutoAimMessage = String.format("Pose-based (%.1f in)", distance);
         }
+
+        // Always enable (whether tag visible or not)
+        trackingEnabled = true;
+        singleShotMode = true;
+        trackingTimer.reset();
+        autoAimSpinDownTimer.reset();
     }
 
+    /**
+     * Drive/Design teams don't want Auto-aim/AutoTracking to timeout, so its deprecated for now
+     * Delete this method in the next couple days, once this choice is validated on robot! Oct-29
+     */
+    @Deprecated
     private void handleTrackingTimeout() {
         // Disable single-shot tracking after duration
         if (singleShotMode && trackingTimer.seconds() >= Shooter.autoAim.singleShotDuration) {
@@ -374,6 +446,9 @@ public class TeleOpDECODE extends BaseOpMode {
             telemetryM.debug(lastAutoAimMessage);
         }
         telemetryM.debug("");
+
+///        === RELOCALIZATION STATS ===
+        displayRelocalizationStats();  /// <-- the FUTURE of Tele! modular blocks included by a single function call!
 
         // === INTAKE STATUS ===
         if (intake != null) {
