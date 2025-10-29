@@ -26,10 +26,35 @@ public class Robot22154Abilities extends CharacterStats {
         public static double HOLD_DURATION = 0.0;     // N/A for 22154
     }
     
-    public static class StartPoseConstants {
-        public static double DEFAULT_HEADING_DEG = 270.0;
+    public static class VisionConstants {
+        public static double CAMERA_FORWARD_OFFSET = 6.5;  // TODO: Measure actual offset!
+        public static double CAMERA_RIGHT_OFFSET = 0.0;
+        public static double CAMERA_HEADING_OFFSET = 0.0;
     }
-    
+
+    // ==================== CONFIGURATION APPLICATION ====================
+
+    @Override
+    public void applyConfiguration() {
+        _00_robotIdentity.activeRobot = getDisplayName();
+
+        shooterConfig.highVelocityRPM = ShooterConstants.HIGH_VELOCITY_RPM;
+        shooterConfig.lowVelocityRPM = ShooterConstants.LOW_VELOCITY_RPM;
+        shooterConfig.baselinePower = ShooterConstants.BASELINE_POWER;
+        shooterConfig.pidfP = ShooterConstants.PIDF_P;
+
+        ballFeedConfig.feedDuration = BallFeedConstants.FEED_DURATION;
+        ballFeedConfig.reverseDuration = BallFeedConstants.REVERSE_DURATION;
+        ballFeedConfig.holdDuration = BallFeedConstants.HOLD_DURATION;
+
+        intakeConfig.intakeModeName = getIntakeMode().name();
+
+        // Vision/Camera offset
+        visionConfig.cameraForwardOffset = VisionConstants.CAMERA_FORWARD_OFFSET;
+        visionConfig.cameraRightOffset = VisionConstants.CAMERA_RIGHT_OFFSET;
+        visionConfig.cameraHeadingOffset = VisionConstants.CAMERA_HEADING_OFFSET;
+    }
+
     // ==================== IDENTITY ====================
     
     @Override
@@ -68,7 +93,7 @@ public class Robot22154Abilities extends CharacterStats {
     
     @Override
     public BallFeedMode getBallFeedMode() {
-        return BallFeedMode.DUAL_INDEPENDENT;  // Independent L/R control
+        return BallFeedMode.DUAL_CRSERVO_INDEPENDENT;  // Independent L/R control
     }
     
     @Override
@@ -158,46 +183,5 @@ public class Robot22154Abilities extends CharacterStats {
     public String getLifterMotorRName() {
         return "liftMotorR";
     }
-    
-    // ==================== STARTING POSES ====================
-    
-    @Override
-    protected double getDefaultHeading() {
-        return Math.toRadians(StartPoseConstants.DEFAULT_HEADING_DEG);
-    }
-    
-    @Override
-    public Pose getDefaultStartPose() {
-        return new Pose(56, 8, Math.toRadians(StartPoseConstants.DEFAULT_HEADING_DEG));
-    }
-    
-    @Override
-    public Pose getRedNearPose() {
-        return new Pose(56, 8, Math.toRadians(StartPoseConstants.DEFAULT_HEADING_DEG));
-    }
-    
-    @Override
-    public Pose getRedFarPose() {
-        return new Pose(56, 136, Math.toRadians(StartPoseConstants.DEFAULT_HEADING_DEG));
-    }
-    
-    // ==================== CONFIGURATION APPLICATION ====================
-    
-    @Override
-    public void applyConfiguration() {
-        _00_robotIdentity.activeRobot = getDisplayName();
-        
-        shooterConfig.highVelocityRPM = ShooterConstants.HIGH_VELOCITY_RPM;
-        shooterConfig.lowVelocityRPM = ShooterConstants.LOW_VELOCITY_RPM;
-        shooterConfig.baselinePower = ShooterConstants.BASELINE_POWER;
-        shooterConfig.pidfP = ShooterConstants.PIDF_P;
-        
-        ballFeedConfig.feedDuration = BallFeedConstants.FEED_DURATION;
-        ballFeedConfig.reverseDuration = BallFeedConstants.REVERSE_DURATION;
-        ballFeedConfig.holdDuration = BallFeedConstants.HOLD_DURATION;
-        
-        intakeConfig.intakeModeName = getIntakeMode().name();
-        
-        startPoseConfig.defaultHeadingDeg = StartPoseConstants.DEFAULT_HEADING_DEG;
-    }
+
 }

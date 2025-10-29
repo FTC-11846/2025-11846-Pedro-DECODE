@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.opMode;
 
+import static org.firstinspires.ftc.teamcode.pedroPathing.Tuning.draw;
+
 import android.annotation.SuppressLint;
 
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -10,7 +12,6 @@ import org.firstinspires.ftc.teamcode.subsystems.ColorSensors;
 import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.subsystems.Vision;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
-
 import java.util.List;
 
 /**
@@ -103,8 +104,15 @@ public class TeleOpDECODE extends BaseOpMode {
 
         // Display telemetry
         displayTelemetry();
-        // if (follower != null) { draw(); }
-    }
+
+        // Draw robot on dashboard (with safety check for pose validity)
+        if (follower != null && follower.getPose() != null) {
+            try {
+                draw();
+            } catch (Exception e) {
+                // Silently catch drawing errors - non-critical for robot function
+            }
+        }    }
 
     // ==================== GP1: DRIVE CONTROLS ====================
 
@@ -247,21 +255,20 @@ public class TeleOpDECODE extends BaseOpMode {
     // ==================== GP2: INDEPENDENT BALL FEED CONTROLS ====================
 
     private void handleBallFeedControls() {
-        if(ballFeed.getMode() == CharacterStats.BallFeedMode.DUAL_SYNCHRONIZED){
-            // Left lane feed (GP2 Left Trigger)
-            if (gamepad2.left_trigger > 0.5 && gamepadRateLimit.milliseconds() > RATE_LIMIT_MS || gamepad2.right_trigger > 0.5 && gamepadRateLimit.milliseconds() > RATE_LIMIT_MS) {
-                ballFeed.feedLeft();
-                ballFeed.feedRight();
-                gamepadRateLimit.reset();
+        if(ballFeed.getMode() == CharacterStats.BallFeedMode.SINGLE_CRSERVO){
+            // Feed single lane on any trigger
+            if (gamepad2.left_trigger > 0.5 || gamepad2.right_trigger > 0.5) {
+                if (gamepadRateLimit.milliseconds() > RATE_LIMIT_MS) {
+                    ballFeed.feedLeft();  // Single motor, single lane!
+                    gamepadRateLimit.reset();
+                }
             }
         } else {
-            // Left lane feed (GP2 Left Trigger)
+            // Independent L/R control for dual motor robots
             if (gamepad2.left_trigger > 0.5 && gamepadRateLimit.milliseconds() > RATE_LIMIT_MS) {
                 ballFeed.feedLeft();
                 gamepadRateLimit.reset();
             }
-
-            // Right lane feed (GP2 Right Trigger)
             if (gamepad2.right_trigger > 0.5 && gamepadRateLimit.milliseconds() > RATE_LIMIT_MS) {
                 ballFeed.feedRight();
                 gamepadRateLimit.reset();

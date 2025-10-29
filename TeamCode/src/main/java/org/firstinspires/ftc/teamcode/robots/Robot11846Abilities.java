@@ -16,13 +16,52 @@ public class Robot11846Abilities extends CharacterStats {
         public static double BASELINE_POWER = 395.0;
         public static double PIDF_P = 10.0;
     }
-    
+
     public static class BallFeedConstants {
         public static double FEED_DURATION = 0.5;     // Gate lowering time
         public static double REVERSE_DURATION = 0.5;  // Gate raising time (return)
         public static double HOLD_DURATION = 0.3;     // Hold gate down for ball to pass
+        public static double FEED_IDLE_POS = 0.5;
+        public static double FEED_LEFT_SWEEP = -0.4;
+        public static double FEED_RIGHT_SWEEP = 0.4;
     }
-    
+
+    public static class VisionConstants {
+        public static double CAMERA_FORWARD_OFFSET = 7.0;  // TODO: Measure actual offset!
+        public static double CAMERA_RIGHT_OFFSET = 0.0;
+        public static double CAMERA_HEADING_OFFSET = 0.0;
+    }
+
+    // ==================== CONFIGURATION APPLICATION ====================
+
+    @Override
+    public void applyConfiguration() {
+        // Robot identity
+        _00_robotIdentity.activeRobot = getDisplayName();
+
+        // Shooter config
+        shooterConfig.highVelocityRPM = ShooterConstants.HIGH_VELOCITY_RPM;
+        shooterConfig.lowVelocityRPM = ShooterConstants.LOW_VELOCITY_RPM;
+        shooterConfig.baselinePower = ShooterConstants.BASELINE_POWER;
+        shooterConfig.pidfP = ShooterConstants.PIDF_P;
+
+        // BallFeed config - NOW INCLUDING SERVO POSITIONS
+        ballFeedConfig.feedDuration = BallFeedConstants.FEED_DURATION;
+        ballFeedConfig.reverseDuration = BallFeedConstants.REVERSE_DURATION;
+        ballFeedConfig.holdDuration = BallFeedConstants.HOLD_DURATION;
+        ballFeedConfig.ballFeedIdlePos = BallFeedConstants.FEED_IDLE_POS;
+        ballFeedConfig.ballFeedLeftSweep = BallFeedConstants.FEED_LEFT_SWEEP;
+        ballFeedConfig.ballFeedRightSweep = BallFeedConstants.FEED_RIGHT_SWEEP;
+
+        // Intake config
+        intakeConfig.intakeModeName = getIntakeMode().toString();
+
+        // Vision/Camera offset
+        visionConfig.cameraForwardOffset = VisionConstants.CAMERA_FORWARD_OFFSET;
+        visionConfig.cameraRightOffset = VisionConstants.CAMERA_RIGHT_OFFSET;
+        visionConfig.cameraHeadingOffset = VisionConstants.CAMERA_HEADING_OFFSET;
+    }
+
     // ==================== IDENTITY ====================
     
     @Override
@@ -58,20 +97,20 @@ public class Robot11846Abilities extends CharacterStats {
     public String getBallFeedMotorRName() {
         return "feedServoR";
     }
-    
+
     @Override
     public BallFeedMode getBallFeedMode() {
-        return BallFeedMode.DUAL_INDEPENDENT;  // Independent L/R gate control
+        return BallFeedMode.DUAL_SERVO_GATES;
     }
     
     @Override
     public double getFeedReverseDuration() {
-        return ballFeedConfig.reverseDuration;  // Gate return time
+        return ballFeedConfig.reverseDuration;
     }
     
     @Override
     public double getFeedHoldDuration() {
-        return ballFeedConfig.holdDuration;  // Hold gate down for ball
+        return ballFeedConfig.holdDuration;
     }
     
     // ==================== INTAKE CONFIGURATION ====================
@@ -131,27 +170,6 @@ public class Robot11846Abilities extends CharacterStats {
     public boolean hasFoldingMechanism() {
         return true;  // Has folding mechanism
     }
-    
-    // ==================== STARTING POSES ====================
-    // Robot 11846 uses default poses from base class (0° heading)
-    
-    // ==================== CONFIGURATION APPLICATION ====================
-    
-    @Override
-    public void applyConfiguration() {
-        _00_robotIdentity.activeRobot = getDisplayName();
-        
-        shooterConfig.highVelocityRPM = ShooterConstants.HIGH_VELOCITY_RPM;
-        shooterConfig.lowVelocityRPM = ShooterConstants.LOW_VELOCITY_RPM;
-        shooterConfig.baselinePower = ShooterConstants.BASELINE_POWER;
-        shooterConfig.pidfP = ShooterConstants.PIDF_P;
-        
-        ballFeedConfig.feedDuration = BallFeedConstants.FEED_DURATION;
-        ballFeedConfig.reverseDuration = BallFeedConstants.REVERSE_DURATION;
-        ballFeedConfig.holdDuration = BallFeedConstants.HOLD_DURATION;
-        
-        intakeConfig.intakeModeName = getIntakeMode().name();
-        
-        startPoseConfig.defaultHeadingDeg = 0.0;
-    }
+
+
 }

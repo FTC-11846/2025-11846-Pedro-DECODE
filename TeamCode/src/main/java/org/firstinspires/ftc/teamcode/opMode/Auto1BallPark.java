@@ -304,7 +304,7 @@ public class Auto1BallPark extends BaseOpMode {
         
         if (velocityError < AutoConstants.VELOCITY_TOLERANCE || stateTimer.seconds() > 1.5) {
             // Shooter ready (or timeout) - feed ball
-            if (!ballFeed.isFeeding()) {
+            if (!ballFeed.isLeftFeeding()) {
                 ballFeed.startFeed();
             }
         }
@@ -409,7 +409,7 @@ public class Auto1BallPark extends BaseOpMode {
         telemetryM.debug("Shooter: " + String.format("%.0f/%.0f RPM", 
             shooter.getActualVelocityRPM(),
             shooter.getTargetVelocityRPM()));
-        telemetryM.debug("Ball Feed: " + (ballFeed.isFeeding() ? "FEEDING" : "IDLE"));
+        telemetryM.debug("Ball Feed: " + (ballFeed.isLeftFeeding() ? "LEFT FEEDING" : "IDLE"));
         telemetryM.debug("Follower: " + (follower.isBusy() ? "BUSY" : "IDLE"));
         
         telemetryM.update(telemetry);

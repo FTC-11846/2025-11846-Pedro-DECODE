@@ -409,8 +409,9 @@ public abstract class BaseOpMode extends OpMode {
     }
 
     /**
-     * Calculate robot pose from AprilTag detection
+     * Calculate robot pose from AprilTag detection with camera offset correction
      * Uses Vision's goal tag positions (20 Blue, 24 Red)
+     * Applies robot-specific camera offset to transform camera pose to robot center pose
      */
     private Pose calculatePoseFromTag(AprilTagDetection tag) {
         // Get tag field position from Vision
@@ -433,17 +434,29 @@ public abstract class BaseOpMode extends OpMode {
         // Robot's heading (from current odometry - we trust this more than vision)
         double robotHeading = follower.getPose().getHeading();
 
-        // Calculate absolute bearing to tag
+        // Calculate absolute bearing to tag (in field frame)
         double absoluteBearing = robotHeading + bearingRad;
 
-        // Calculate robot position
-        // Robot is "range" distance away from tag, at angle "absoluteBearing" FROM the tag
-        // So: robot position = tag position - (range * direction vector)
-        double robotX = tagPose.getX() - range * Math.cos(absoluteBearing);
-        double robotY = tagPose.getY() - range * Math.sin(absoluteBearing);
+        // Calculate CAMERA position (where the measurement originates)
+        // Camera is "range" distance away from tag, at angle "absoluteBearing" FROM the tag
+        double cameraX = tagPose.getX() - range * Math.cos(absoluteBearing);
+        double cameraY = tagPose.getY() - range * Math.sin(absoluteBearing);
 
-        // TODO: Apply camera offset transform if camera not at robot center
-        // This would require camera offset constants (forward, right offsets)
+        // Get robot-specific camera offset
+        CharacterStats stats = character.getAbilities();
+        double forwardOffset = stats.getCameraForwardOffset();
+        double rightOffset = stats.getCameraRightOffset();
+
+        // Transform camera position to robot center position
+        // Camera offset is in robot frame, need to rotate by robot heading to field frame
+        // Forward offset: along robot's heading direction
+        // Right offset: perpendicular to robot's heading (90° CCW)
+        double robotX = cameraX
+                - forwardOffset * Math.cos(robotHeading)
+                + rightOffset * Math.sin(robotHeading);
+        double robotY = cameraY
+                - forwardOffset * Math.sin(robotHeading)
+                - rightOffset * Math.cos(robotHeading);
 
         return new Pose(robotX, robotY, robotHeading);
     }

@@ -20,8 +20,8 @@ public abstract class CharacterStats {
     public static ShooterConfig shooterConfig = new ShooterConfig();
     public static BallFeedConfig ballFeedConfig = new BallFeedConfig();
     public static IntakeConfig intakeConfig = new IntakeConfig();
-    public static StartPoseConfig startPoseConfig = new StartPoseConfig();
-    
+    public static VisionConfig visionConfig = new VisionConfig();
+
     // ==================== NESTED CONFIG CLASSES ====================
     
     public static class RobotIdentity {
@@ -35,21 +35,29 @@ public abstract class CharacterStats {
         public double baselinePower = 0;
         public double pidfP = 0;
     }
-    
+
     public static class BallFeedConfig {
         public double feedDuration = 0.25;
         public double reverseDuration = 0.0;  // 22154: prevents double-feed
         public double holdDuration = 0.0;      // 11846: gate hold time
+
+        // NEW: Servo position control (for 11846)
+        public double ballFeedIdlePos = 0.5;      // Center/neutral position
+        public double ballFeedLeftSweep = -0.4;   // Left gate offset from idle
+        public double ballFeedRightSweep = 0.4;   // Right gate offset from idle
     }
     
     public static class IntakeConfig {
         public String intakeModeName = "NONE";
     }
-    
-    public static class StartPoseConfig {
-        public double defaultHeadingDeg = 0;
+
+    public static class VisionConfig {
+        public double cameraForwardOffset = 0.0;  // Inches forward from robot center (+ = forward)
+        public double cameraRightOffset = 0.0;    // Inches right from robot center (+ = right)
+        public double cameraHeadingOffset = 0.0;  // Radians CCW from robot heading
     }
-    
+
+
     // ==================== IDENTITY ====================
     
     /**
@@ -157,7 +165,18 @@ public abstract class CharacterStats {
     public double getFeedHoldDuration() {
         return ballFeedConfig.holdDuration;
     }
-    
+
+    public double getFeedIdlePos() {
+        return ballFeedConfig.ballFeedIdlePos;
+    }
+
+    public double getFeedLeftSweep() {
+        return ballFeedConfig.ballFeedLeftSweep;
+    }
+
+    public double getFeedRightSweep() {
+        return ballFeedConfig.ballFeedRightSweep;
+    }
     // ==================== INTAKE CONFIGURATION ====================
     
     /**
@@ -287,52 +306,32 @@ public abstract class CharacterStats {
         return null;
     }
     
-    // ==================== STARTING POSES ====================
-    
+    // ==================== VISION/CAMERA CONFIGURATION ====================
+
     /**
-     * Get the default starting pose for this robot
-     * Override if robot has a different preferred heading
+     * Get camera forward offset from robot center in inches
+     * Positive = camera is forward of robot center
      */
-    public Pose getDefaultStartPose() {
-        return new Pose(56, 8, Math.toRadians(startPoseConfig.defaultHeadingDeg));
+    public double getCameraForwardOffset() {
+        return visionConfig.cameraForwardOffset;
     }
-    
+
     /**
-     * Get Red Near starting pose for this robot
+     * Get camera right offset from robot center in inches
+     * Positive = camera is right of robot center
      */
-    public Pose getRedNearPose() {
-        return new Pose(56, 8, getDefaultHeading());
+    public double getCameraRightOffset() {
+        return visionConfig.cameraRightOffset;
     }
-    
+
     /**
-     * Get Red Far starting pose for this robot
+     * Get camera heading offset from robot heading in radians
+     * Positive = camera rotated CCW from robot heading
      */
-    public Pose getRedFarPose() {
-        return new Pose(56, 136, getDefaultHeading());
+    public double getCameraHeadingOffset() {
+        return visionConfig.cameraHeadingOffset;
     }
-    
-    /**
-     * Get Blue Near starting pose for this robot
-     */
-    public Pose getBlueNearPose() {
-        return new Pose(86, 8, Math.toRadians(180));
-    }
-    
-    /**
-     * Get Blue Far starting pose for this robot
-     */
-    public Pose getBlueFarPose() {
-        return new Pose(86, 136, Math.toRadians(180));
-    }
-    
-    /**
-     * Get default heading for this robot (in radians)
-     * Reads from shared config populated by applyConfiguration()
-     */
-    protected double getDefaultHeading() {
-        return Math.toRadians(startPoseConfig.defaultHeadingDeg);
-    }
-    
+
     // ==================== CONFIGURATION APPLICATION ====================
     
     /**
@@ -345,11 +344,11 @@ public abstract class CharacterStats {
     public abstract void applyConfiguration();
     
     // ==================== ENUMS ====================
-    
+
     public enum BallFeedMode {
-        SINGLE,              // One motor only
-        DUAL_SYNCHRONIZED,   // Two motors, same power
-        DUAL_INDEPENDENT     // Two motors, can control separately
+        SINGLE_CRSERVO,           // TestBot: 1 CRServo
+        DUAL_CRSERVO_INDEPENDENT, // 22154: 2 CRServos, independent control
+        DUAL_SERVO_GATES          // 11846: 2 Position Servos (gates)
     }
     
     public enum IntakeMode {

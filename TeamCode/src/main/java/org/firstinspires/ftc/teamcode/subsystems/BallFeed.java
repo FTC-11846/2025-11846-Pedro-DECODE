@@ -12,35 +12,42 @@ import org.firstinspires.ftc.teamcode.robots.CharacterStats.BallFeedMode;
 
 /**
  * Ball feeding subsystem with feed-and-reverse state machine
- * - 22154: Feed wheels forward → reverse to prevent double-feed
- * - 11846: Servos lower gates → hold for ball to pass → return to raised position
- * 
+ *
+ * Supports 3 hardware configurations:
+ * - TestBot: Single CRServo (continuous rotation)
+ * - Robot 22154: Dual CRServos (independent feed wheels with reverse)
+ * - Robot 11846: Dual Servos (position-controlled gates)
+ *
+ * State Machines:
+ * - CRServo robots: FEEDING → REVERSING → IDLE
+ * - Servo robots (gates): FEEDING (lower) → HOLDING (wait) → RETURNING (raise) → IDLE
+ *
  * Independent left/right lane control via triggers
  */
 @Configurable
 public class BallFeed {
 
     // ==================== CONFIGURATION OBJECT ====================
-// Feeding Control parameters had no usages!!!
-//    public static FeedingControl feedingControl = new FeedingControl();
-//
-//    // ==================== NESTED CONFIG CLASS ====================
-//
-//    public static class FeedingControl {
-//        public double feedPower = 1.0;
-//        public double reversePower = -1.0;
-//        public double leftPowerMultiplier = 1.0;
-//        public double rightPowerMultiplier = 1.0;
-//    }
+
+    public static FeedingControl feedingControl = new FeedingControl();
+
+    // ==================== NESTED CONFIG CLASS ====================
+
+    public static class FeedingControl {
+        public double feedPower = 1.0;
+        public double reversePower = -1.0;
+        public double leftPowerMultiplier = 1.0;
+        public double rightPowerMultiplier = 1.0;
+    }
 
     // ==================== STATE TRACKING ====================
 
     private enum FeedState {
         IDLE,       // Not feeding
-        FEEDING,    // Moving forward (both robots) or lowering gate (11846)
-        HOLDING,    // 11846 only: gate down, waiting for ball to pass
-        REVERSING,  // 22154 only: reversing to prevent double-feed / 11846: raising gate
-        RETURNING   // Alias for REVERSING, used by 11846
+        FEEDING,    // CRServo: forward motion / Servo: lowering gate
+        HOLDING,    // Servo only: gate down, waiting for ball to pass
+        REVERSING,  // CRServo: reversing to prevent double-feed
+        RETURNING   // Servo only: raising gate back to idle position
     }
 
     // ==================== SUBSYSTEM FIELDS ====================
@@ -52,10 +59,10 @@ public class BallFeed {
     private final BallFeedMode mode;
 
     @IgnoreConfigurable
-    private final CRServo motorL;
+    private final Object motorL;  // CRServo or Servo
 
     @IgnoreConfigurable
-    private final CRServo motorR; // null for single motor mode
+    private final Object motorR;  // CRServo or Servo or null
 
     @IgnoreConfigurable
     private final ElapsedTime leftTimer = new ElapsedTime();
@@ -78,6 +85,15 @@ public class BallFeed {
     @IgnoreConfigurable
     private final double holdDuration;
 
+    @IgnoreConfigurable
+    private final double feedIdlePos;
+
+    @IgnoreConfigurable
+    private final double feedLeftSweep;
+
+    @IgnoreConfigurable
+    private final double feedRightSweep;
+
     // ==================== CONSTRUCTOR ====================
 
     /**
@@ -96,23 +112,33 @@ public class BallFeed {
         this.feedDuration = stats.getDefaultFeedDuration();
         this.reverseDuration = stats.getFeedReverseDuration();
         this.holdDuration = stats.getFeedHoldDuration();
+        this.feedIdlePos = stats.getFeedIdlePos();
+        this.feedLeftSweep = stats.getFeedLeftSweep();
+        this.feedRightSweep = stats.getFeedRightSweep();
 
-        // Initialize motors based on mode
+        // Initialize hardware based on mode
         switch (mode) {
-            case SINGLE:
-                // Only left motor
+            case SINGLE_CRSERVO:
+                // TestBot: Single CRServo only
                 motorL = hardwareMap.get(CRServo.class, stats.getBallFeedMotorLName());
-//                motorL.setDirection(DcMotorSimple.Direction.REVERSE);
                 motorR = null;
                 break;
 
-            case DUAL_SYNCHRONIZED:
-            case DUAL_INDEPENDENT:
-                // Both motors
+            case DUAL_CRSERVO_INDEPENDENT:
+                // Robot 22154: Two CRServos for independent feed control
                 motorL = hardwareMap.get(CRServo.class, stats.getBallFeedMotorLName());
                 motorR = hardwareMap.get(CRServo.class, stats.getBallFeedMotorRName());
-                motorL.setDirection(CRServo.Direction.REVERSE);
-                motorR.setDirection(CRServo.Direction.FORWARD);
+                ((CRServo) motorL).setDirection(CRServo.Direction.REVERSE);
+                ((CRServo) motorR).setDirection(CRServo.Direction.FORWARD);
+                break;
+
+            case DUAL_SERVO_GATES:
+                // Robot 11846: Two position servos as gates
+                motorL = hardwareMap.get(Servo.class, stats.getBallFeedMotorLName());
+                motorR = hardwareMap.get(Servo.class, stats.getBallFeedMotorRName());
+                // Initialize to idle position
+                ((Servo) motorL).setPosition(feedIdlePos);
+                ((Servo) motorR).setPosition(feedIdlePos);
                 break;
 
             default:
@@ -163,29 +189,9 @@ public class BallFeed {
     public void stopFeed() {
         leftState = FeedState.IDLE;
         rightState = FeedState.IDLE;
-//        motorL.setPower(0);
-//        if (motorR != null) {
-//            motorR.setPower(0);
-//        }
+        updateLeftMotor();
+        updateRightMotor();
     }
-
-    /**
-     * Set custom feed power (-1.0 to 1.0) for manual control
-     */
-//    public void setFeedPower(double power) {
-//        setMotorPosition(power, power);
-//    }
-
-    /**
-     * Set independent powers for left and right motors
-     */
-//    public void setIndependentPowers(double leftPower, double rightPower) {
-//        if (mode != BallFeedMode.DUAL_INDEPENDENT) {
-//            setMotorPosition(leftPower, leftPower);
-//        } else {
-//            setMotorPosition(leftPower, rightPower);
-//        }
-//    }
 
     /**
      * Must be called in loop() to handle state machine
@@ -196,10 +202,6 @@ public class BallFeed {
     }
 
     // ==================== GETTERS ====================
-
-    public boolean isFeeding() {
-        return leftState != FeedState.IDLE || rightState != FeedState.IDLE;
-    }
 
     public boolean isLeftFeeding() {
         return leftState != FeedState.IDLE;
@@ -225,47 +227,50 @@ public class BallFeed {
         return stats.getDisplayName();
     }
 
-    // ==================== PRIVATE STATE MACHINE ====================
+    // ==================== STATE MACHINE LOGIC ====================
 
     private void updateLeftStateMachine() {
         switch (leftState) {
-            case IDLE:
-                // Waiting for trigger
-                break;
-
             case FEEDING:
+                // Check if feeding duration complete
                 if (leftTimer.seconds() >= feedDuration) {
-                    // Check if we need HOLDING or go straight to REVERSING
-                    if (holdDuration > 0) {
+                    // Transition based on mode
+                    if (mode == BallFeedMode.DUAL_SERVO_GATES && holdDuration > 0) {
+                        // 11846: Move to HOLDING state
                         leftState = FeedState.HOLDING;
                         leftTimer.reset();
-                        updateLeftMotor(); // Stop motor during hold
                     } else if (reverseDuration > 0) {
+                        // 22154: Move to REVERSING state
                         leftState = FeedState.REVERSING;
                         leftTimer.reset();
-                        updateLeftMotor(); // Start reverse
                     } else {
+                        // TestBot or no reverse: Go directly to IDLE
                         leftState = FeedState.IDLE;
-                        updateLeftMotor(); // Stop
                     }
+                    updateLeftMotor();
                 }
                 break;
 
             case HOLDING:
-                // 11846: Gate is down, waiting for ball to pass
+                // Servo gate: Hold down for ball to pass through
                 if (leftTimer.seconds() >= holdDuration) {
                     leftState = FeedState.RETURNING;
                     leftTimer.reset();
-                    updateLeftMotor(); // Start return
+                    updateLeftMotor();
                 }
                 break;
 
             case REVERSING:
             case RETURNING:
-                if (leftTimer.seconds() >= (reverseDuration > 0 ? reverseDuration : feedDuration)) {
+                // Wait for reverse/return duration
+                if (leftTimer.seconds() >= (mode == BallFeedMode.DUAL_SERVO_GATES ? reverseDuration : reverseDuration)) {
                     leftState = FeedState.IDLE;
-                    updateLeftMotor(); // Stop
+                    updateLeftMotor();
                 }
+                break;
+
+            case IDLE:
+                // Do nothing
                 break;
         }
     }
@@ -274,24 +279,18 @@ public class BallFeed {
         if (motorR == null) return;
 
         switch (rightState) {
-            case IDLE:
-                // Waiting for trigger
-                break;
-
             case FEEDING:
                 if (rightTimer.seconds() >= feedDuration) {
-                    if (holdDuration > 0) {
+                    if (mode == BallFeedMode.DUAL_SERVO_GATES && holdDuration > 0) {
                         rightState = FeedState.HOLDING;
                         rightTimer.reset();
-                        updateRightMotor();
                     } else if (reverseDuration > 0) {
                         rightState = FeedState.REVERSING;
                         rightTimer.reset();
-                        updateRightMotor();
                     } else {
                         rightState = FeedState.IDLE;
-                        updateRightMotor();
                     }
+                    updateRightMotor();
                 }
                 break;
 
@@ -305,86 +304,90 @@ public class BallFeed {
 
             case REVERSING:
             case RETURNING:
-                if (rightTimer.seconds() >= (reverseDuration > 0 ? reverseDuration : feedDuration)) {
+                if (rightTimer.seconds() >= (mode == BallFeedMode.DUAL_SERVO_GATES ? reverseDuration : reverseDuration)) {
                     rightState = FeedState.IDLE;
                     updateRightMotor();
                 }
                 break;
+
+            case IDLE:
+                break;
         }
     }
 
-    private void updateLeftMotor() {
-        double power = 0.0;
+    // ==================== HARDWARE UPDATE METHODS ====================
 
-        switch (leftState) {
-            case FEEDING:
-                power = 1.0;
-//                power = feedingControl.feedPower * feedingControl.leftPowerMultiplier;
-                break;
-            case HOLDING:
-                power = 0.0; // Stop during hold
-                break;
-            case REVERSING:
-            case RETURNING:
-                power = -1.0;
-//                position = feedingControl.reversePower * feedingControl.leftPowerMultiplier;
-                break;
-            case IDLE:
-                power = 0.0;
-                break;
-        }
-        if(stats.getShortName() == "TB"){
-            motorL.setPower(-power);
-        }else{
-            motorL.setPower(power);
+    private void updateLeftMotor() {
+        if (motorL == null) return;
+
+        if (motorL instanceof CRServo) {
+            // CRServo: Continuous rotation mode (power control)
+            double power = calculateCRServoPower(leftState);
+            // Apply TestBot direction fix
+            if (stats.getShortName().equals("TB")) {
+                power = -power;
+            }
+            ((CRServo) motorL).setPower(power);
+        } else if (motorL instanceof Servo) {
+            // Servo: Position mode (gate control)
+            double position = calculateServoPosition(leftState, true); // true = left
+            ((Servo) motorL).setPosition(position);
         }
     }
 
     private void updateRightMotor() {
         if (motorR == null) return;
 
-        double power = 0.0;
-
-        switch (rightState) {
-            case FEEDING:
-                power = 1.0;
-//                position = feedingControl.feedPower * feedingControl.rightPowerMultiplier;
-                break;
-            case HOLDING:
-                power = 0.0;
-                break;
-            case REVERSING:
-            case RETURNING:
-                power = -1.0;
-//                position = feedingControl.reversePower * feedingControl.rightPowerMultiplier;
-                break;
-            case IDLE:
-                power = 0.0;
-                break;
-        }
-        if(stats.getShortName() == "TB"){
-            motorR.setPower(-power);
-        } else {
-            motorR.setPower(power);
+        if (motorR instanceof CRServo) {
+            // CRServo: Continuous rotation mode (power control)
+            double power = calculateCRServoPower(rightState);
+            // Apply TestBot direction fix
+            if (stats.getShortName().equals("TB")) {
+                power = -power;
+            }
+            ((CRServo) motorR).setPower(power);
+        } else if (motorR instanceof Servo) {
+            // Servo: Position mode (gate control)
+            double position = calculateServoPosition(rightState, false); // false = right
+            ((Servo) motorR).setPosition(position);
         }
     }
 
-//    private void setMotorPowers(double leftPower, double rightPower) {
-//        // Apply multipliers if in independent mode
-//        if (mode == BallFeedMode.DUAL_INDEPENDENT) {
-//            leftPower *= feedingControl.leftPowerMultiplier;
-//            rightPower *= feedingControl.rightPowerMultiplier;
-//        }
-//        private void setMotorPosition(double leftPosition, double rightPosition) {
-//            // Apply multipliers if in independent mode
-//            if (mode == BallFeedMode.DUAL_INDEPENDENT) {
-//                leftPosition *= feedingControl.leftPowerMultiplier;
-//                rightPosition *= feedingControl.rightPowerMultiplier;
-//            }
-//
-//            motorL.setPosition(leftPosition);
-//        if (motorR != null) {
-//            motorR.setPosition(rightPosition);
-//        }
-//    }
+    /**
+     * Calculate CRServo power based on state
+     */
+    private double calculateCRServoPower(FeedState state) {
+        switch (state) {
+            case FEEDING:
+                return feedingControl.feedPower;
+            case REVERSING:
+                return feedingControl.reversePower;
+            case HOLDING:
+            case RETURNING:
+            case IDLE:
+            default:
+                return 0.0;
+        }
+    }
+
+    /**
+     * Calculate Servo position based on state (for 11846 gates)
+     * @param state Current feed state
+     * @param isLeft True for left servo, false for right servo
+     */
+    private double calculateServoPosition(FeedState state, boolean isLeft) {
+        double sweep = isLeft ? feedLeftSweep : feedRightSweep;
+
+        switch (state) {
+            case FEEDING:
+            case HOLDING:
+                // Gate down (feeding or holding for ball to pass)
+                return feedIdlePos + sweep;
+            case RETURNING:
+            case IDLE:
+            default:
+                // Gate up (idle position)
+                return feedIdlePos;
+        }
+    }
 }

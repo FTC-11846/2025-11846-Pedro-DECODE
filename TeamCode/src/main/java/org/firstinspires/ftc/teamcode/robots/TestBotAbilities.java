@@ -20,7 +20,36 @@ public class TestBotAbilities extends CharacterStats {
     public static class BallFeedConstants {
         public static double FEED_DURATION = 0.25;
     }
-    
+
+    public static class VisionConstants {
+        public static double CAMERA_FORWARD_OFFSET = 6.5;  // TODO: Measure actual offset!
+        public static double CAMERA_RIGHT_OFFSET = 0.0;
+        public static double CAMERA_HEADING_OFFSET = 0.0;
+    }
+
+    // ==================== CONFIGURATION APPLICATION ====================
+
+    @Override
+    public void applyConfiguration() {
+        _00_robotIdentity.activeRobot = getDisplayName();
+
+        shooterConfig.highVelocityRPM = ShooterConstants.HIGH_VELOCITY_RPM;
+        shooterConfig.lowVelocityRPM = ShooterConstants.LOW_VELOCITY_RPM;
+        shooterConfig.baselinePower = ShooterConstants.BASELINE_POWER;
+        shooterConfig.pidfP = ShooterConstants.PIDF_P;
+
+        ballFeedConfig.feedDuration = BallFeedConstants.FEED_DURATION;
+        ballFeedConfig.reverseDuration = 0.0;
+        ballFeedConfig.holdDuration = 0.0;
+
+        intakeConfig.intakeModeName = getIntakeMode().name();
+
+        // Vision/Camera offset
+        visionConfig.cameraForwardOffset = VisionConstants.CAMERA_FORWARD_OFFSET;
+        visionConfig.cameraRightOffset = VisionConstants.CAMERA_RIGHT_OFFSET;
+        visionConfig.cameraHeadingOffset = VisionConstants.CAMERA_HEADING_OFFSET;
+    }
+
     // ==================== IDENTITY ====================
     
     @Override
@@ -59,9 +88,9 @@ public class TestBotAbilities extends CharacterStats {
     
     @Override
     public BallFeedMode getBallFeedMode() {
-        return BallFeedMode.DUAL_SYNCHRONIZED;
+        return BallFeedMode.SINGLE_CRSERVO;  // Single CRServo
     }
-    
+
     // ==================== INTAKE CONFIGURATION ====================
     
     @Override
@@ -91,23 +120,5 @@ public class TestBotAbilities extends CharacterStats {
     // ==================== STARTING POSES ====================
     // TestBot uses default poses from base class
     
-    // ==================== CONFIGURATION APPLICATION ====================
-    
-    @Override
-    public void applyConfiguration() {
-        _00_robotIdentity.activeRobot = getDisplayName();
-        
-        shooterConfig.highVelocityRPM = ShooterConstants.HIGH_VELOCITY_RPM;
-        shooterConfig.lowVelocityRPM = ShooterConstants.LOW_VELOCITY_RPM;
-        shooterConfig.baselinePower = ShooterConstants.BASELINE_POWER;
-        shooterConfig.pidfP = ShooterConstants.PIDF_P;
-        
-        ballFeedConfig.feedDuration = BallFeedConstants.FEED_DURATION;
-        ballFeedConfig.reverseDuration = 0.0;
-        ballFeedConfig.holdDuration = 0.0;
-        
-        intakeConfig.intakeModeName = getIntakeMode().name();
-        
-        startPoseConfig.defaultHeadingDeg = 0.0;
-    }
+
 }
