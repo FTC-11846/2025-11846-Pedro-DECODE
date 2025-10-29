@@ -3,95 +3,122 @@ package org.firstinspires.ftc.teamcode.robots;
 import com.bylazar.configurables.annotations.Configurable;
 
 /**
- * TestBotAbilities - Configuration for the development/testing robot
- * Used for alpha/beta testing of major features before competition
+ * TestBotAbilities - Configuration for basic test robot
+ * Features: Single shooter, single ball feed only
+ * NO intake, NO color sensors, NO LEDs, NO lifters
  */
 public class TestBotAbilities extends CharacterStats {
-
+    
     // ==================== TUNABLE CONSTANTS ====================
-
-    @Configurable
     public static class ShooterConstants {
-        public static double HIGH_VELOCITY_RPM = 5500;
-        public static double LOW_VELOCITY_RPM = 1500;
-        public static double BASELINE_POWER = 395.0;
-        public static double PIDF_P = 10.0;
+        public static double HIGH_VELOCITY_RPM = 3000;
+        public static double LOW_VELOCITY_RPM = 1000;
+        public static double BASELINE_POWER = 1500.0;
+        public static double PIDF_P = 15.0;
     }
 
-    @Configurable
     public static class BallFeedConstants {
         public static double FEED_DURATION = 0.25;
     }
 
-    // ==================== IDENTITY ====================
+    public static class VisionConstants {
+        public static double CAMERA_FORWARD_OFFSET = 6.5;  // TODO: Measure actual offset!
+        public static double CAMERA_RIGHT_OFFSET = 0.0;
+        public static double CAMERA_HEADING_OFFSET = 0.0;
+    }
 
+    // ==================== CONFIGURATION APPLICATION ====================
+
+    @Override
+    public void applyConfiguration() {
+        _00_robotIdentity.activeRobot = getDisplayName();
+
+        shooterConfig.highVelocityRPM = ShooterConstants.HIGH_VELOCITY_RPM;
+        shooterConfig.lowVelocityRPM = ShooterConstants.LOW_VELOCITY_RPM;
+        shooterConfig.baselinePower = ShooterConstants.BASELINE_POWER;
+        shooterConfig.pidfP = ShooterConstants.PIDF_P;
+
+        ballFeedConfig.feedDuration = BallFeedConstants.FEED_DURATION;
+        ballFeedConfig.reverseDuration = 0.0;
+        ballFeedConfig.holdDuration = 0.0;
+
+        intakeConfig.intakeModeName = getIntakeMode().name();
+
+        // Vision/Camera offset
+        visionConfig.cameraForwardOffset = VisionConstants.CAMERA_FORWARD_OFFSET;
+        visionConfig.cameraRightOffset = VisionConstants.CAMERA_RIGHT_OFFSET;
+        visionConfig.cameraHeadingOffset = VisionConstants.CAMERA_HEADING_OFFSET;
+    }
+
+    // ==================== IDENTITY ====================
+    
     @Override
     public String getDisplayName() {
         return "TestBot";
     }
-
+    
     @Override
     public String getShortName() {
         return "TB";
     }
-
+    
     // ==================== SHOOTER CONFIGURATION ====================
-
+    
     @Override
     public String getShooterMotorLName() {
         return "launchMotor";
     }
-
+    
     @Override
     public String getShooterMotorRName() {
-        return null; // TestBot has single shooter
+        return null; // Single shooter
     }
-
-    @Override
-    public double getHighVelocityRPM() {
-        return ShooterConstants.HIGH_VELOCITY_RPM;
-    }
-
-    @Override
-    public double getLowVelocityRPM() {
-        return ShooterConstants.LOW_VELOCITY_RPM;
-    }
-
-    @Override
-    public double getBaselinePower() {
-        return ShooterConstants.BASELINE_POWER;
-    }
-
-    @Override
-    public double getShooterPIDFP() {
-        return ShooterConstants.PIDF_P;
-    }
-
+    
     // ==================== BALL FEED CONFIGURATION ====================
-
+    
     @Override
     public String getBallFeedMotorLName() {
         return "feedServoL";
     }
-
+    
     @Override
     public String getBallFeedMotorRName() {
         return "feedServoR";
     }
-
+    
     @Override
     public BallFeedMode getBallFeedMode() {
-        return BallFeedMode.DUAL_SYNCHRONIZED;
+        return BallFeedMode.SINGLE_CRSERVO;  // Single CRServo
+    }
+
+    // ==================== INTAKE CONFIGURATION ====================
+    
+    @Override
+    public IntakeMode getIntakeMode() {
+        return IntakeMode.SINGLE_TOGGLE;  // No intake hardware
     }
 
     @Override
-    public double getDefaultFeedDuration() {
-        return BallFeedConstants.FEED_DURATION;
+    public String getIntakeOneMotorName() {
+        return "intakeMotor";  // Front stage
     }
-
-    // ==================== MECHANISM CONFIGURATION ====================
-    // TestBot has no special mechanisms, all defaults from base class
-
+    
+    // ==================== COLOR SENSOR CONFIGURATION ====================
+    
+    @Override
+    public boolean hasColorSensors() {
+        return false;  // No color sensors
+    }
+    
+    // ==================== LED CONFIGURATION ====================
+    
+    @Override
+    public boolean hasLEDSystem() {
+        return false;  // No LEDs
+    }
+    
     // ==================== STARTING POSES ====================
     // TestBot uses default poses from base class
+    
+
 }
