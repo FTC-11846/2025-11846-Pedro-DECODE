@@ -21,17 +21,17 @@ import org.firstinspires.ftc.teamcode.robots.CharacterStats.BallFeedMode;
 public class BallFeed {
 
     // ==================== CONFIGURATION OBJECT ====================
-
-    public static FeedingControl feedingControl = new FeedingControl();
-
-    // ==================== NESTED CONFIG CLASS ====================
-
-    public static class FeedingControl {
-        public double feedPower = 1.0;
-        public double reversePower = -1.0;
-        public double leftPowerMultiplier = 1.0;
-        public double rightPowerMultiplier = 1.0;
-    }
+// Feeding Control parameters had no usages!!!
+//    public static FeedingControl feedingControl = new FeedingControl();
+//
+//    // ==================== NESTED CONFIG CLASS ====================
+//
+//    public static class FeedingControl {
+//        public double feedPower = 1.0;
+//        public double reversePower = -1.0;
+//        public double leftPowerMultiplier = 1.0;
+//        public double rightPowerMultiplier = 1.0;
+//    }
 
     // ==================== STATE TRACKING ====================
 

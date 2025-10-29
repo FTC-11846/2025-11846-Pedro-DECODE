@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.opMode;
 
+import com.bylazar.configurables.PanelsConfigurables;
 import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.bylazar.telemetry.TelemetryManager;
@@ -217,6 +218,7 @@ public abstract class BaseOpMode extends OpMode {
         if (gamepad1.a && !aButtonLast) {
             character = MainCharacter.values()[selectedRobotIndex];
             character.getAbilities().applyConfiguration();
+            PanelsConfigurables.INSTANCE.refreshClass(this);  // Updates Panels to match the robot we just loaded!!!
             MainCharacter.ACTIVE_ROBOT = character;
             currentStage = InitStage.SELECT_ALLIANCE;
 

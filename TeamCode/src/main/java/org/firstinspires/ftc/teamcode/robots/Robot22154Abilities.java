@@ -7,11 +7,12 @@ import com.pedropathing.geometry.Pose;
  * Robot22154Abilities - Configuration for competition robot 22154
  * Features: Dual shooters, dual-independent ball feed, dual-independent intake, color sensors, LEDs, lifters
  */
+
+ // @Configurable should NOT appear anywhere in this class!!!  Tune from CharacterStats in Panels
 public class Robot22154Abilities extends CharacterStats {
     
     // ==================== TUNABLE CONSTANTS ====================
     
-    @Configurable
     public static class ShooterConstants {
         public static double HIGH_VELOCITY_RPM = 4000;
         public static double LOW_VELOCITY_RPM = 1500;
@@ -19,14 +20,12 @@ public class Robot22154Abilities extends CharacterStats {
         public static double PIDF_P = 20.0;
     }
     
-    @Configurable
     public static class BallFeedConstants {
         public static double FEED_DURATION = 0.25;
         public static double REVERSE_DURATION = 0.0;  // Prevent double-feed
         public static double HOLD_DURATION = 0.0;     // N/A for 22154
     }
     
-    @Configurable
     public static class StartPoseConstants {
         public static double DEFAULT_HEADING_DEG = 270.0;
     }

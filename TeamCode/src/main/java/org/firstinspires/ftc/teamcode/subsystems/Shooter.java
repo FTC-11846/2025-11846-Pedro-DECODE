@@ -24,21 +24,22 @@ public class Shooter {
     public static PIDF pidf = new PIDF();
     
     // ==================== NESTED CONFIG CLASSES ====================
-    
+
+    // Used to scale shooter RPM's
     public static class VelocityControl {
         public double minPowerRPM = 1500;
-        public double maxPowerRPM = 5500;
+        public double maxPowerRPM = 3500;
     }
     
     public static class AutoAim {
-        public double linearCorrectionFactor = 18.0;
-        public double headingPGain = 0.03;
+        public double linearCorrectionFactor = 24.0;
+        public double headingPGain = 0.05;
         public double maxTrackingRotation = 0.3;
         public double headingDeadbandDeg = 2.0;
         public double singleShotDuration = 120.0;
         public double autoAimSpinDownTime = 120.0;
         public double overrideThreshold = 0.15;
-        public double tagLossTimeout = 1.0;
+//        public double tagLossTimeout = 1.0;   // Muted, currently no usages
     }
     
     public static class PIDF {

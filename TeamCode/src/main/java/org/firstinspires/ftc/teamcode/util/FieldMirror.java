@@ -14,21 +14,22 @@ import com.pedropathing.geometry.Pose;
  * - Heading: 0° = facing audience, 90° = facing far side
  */
 public class FieldMirror {
-    
-    @Configurable
-    public static class RelocalizationConstants {
-        // How much to trust odometry vs vision when blending poses
-        // 1.0 = trust odometry completely, 0.0 = trust vision completely
-        public static double ODOMETRY_TRUST_RATIO = 0.7;
-        
-        // Minimum error (inches) before applying relocalization
-        // Prevents jitter from small AprilTag detection variations
-        public static double MIN_ERROR_THRESHOLD = 3.0;
-        
-        // Maximum error (inches) to accept from vision
-        // Rejects obviously bad AprilTag detections
-        public static double MAX_ERROR_THRESHOLD = 24.0;
-    }
+
+
+        // The only usages were by an UNUSED internal method!!
+//    public static class RelocalizationConstants {
+////        // How much to trust odometry vs vision when blending poses
+////        // 1.0 = trust odometry completely, 0.0 = trust vision completely
+////        public static double ODOMETRY_TRUST_RATIO = 0.7;   // No USAGES!!! Delete Later. Or delete now, if now is later.
+//
+//        // Minimum error (inches) before applying relocalization
+//        // Prevents jitter from small AprilTag detection variations
+//        public static double MIN_ERROR_THRESHOLD = 2.0;
+//
+//        // Maximum error (inches) to accept from vision
+//        // Rejects obviously bad AprilTag detections
+//        public static double MAX_ERROR_THRESHOLD = 24.0;
+//    }
     
     // Field dimensions (inches)
     private static final double FIELD_WIDTH = 144.0;
@@ -141,27 +142,27 @@ public class FieldMirror {
         return Math.sqrt(dx * dx + dy * dy);
     }
     
-    /**
+    /**    10/28/25 No Usages!!!
      * Check if relocalization should be applied based on error thresholds
      * 
      * @param currentPose Current odometry pose
      * @param visionPose Vision-corrected pose
      * @return true if relocalization should be applied
      */
-    public static boolean shouldRelocalize(Pose currentPose, Pose visionPose) {
-        double error = distanceBetween(currentPose, visionPose);
-        
-        // Too small - don't correct (avoids jitter)
-        if (error < RelocalizationConstants.MIN_ERROR_THRESHOLD) {
-            return false;
-        }
-        
-        // Too large - reject as bad detection
-        if (error > RelocalizationConstants.MAX_ERROR_THRESHOLD) {
-            return false;
-        }
-        
-        // Within acceptable range - apply correction
-        return true;
-    }
+//    public static boolean shouldRelocalize(Pose currentPose, Pose visionPose) {
+//        double error = distanceBetween(currentPose, visionPose);
+//
+//        // Too small - don't correct (avoids jitter)
+//        if (error < RelocalizationConstants.MIN_ERROR_THRESHOLD) {
+//            return false;
+//        }
+//
+//        // Too large - reject as bad detection
+//        if (error > RelocalizationConstants.MAX_ERROR_THRESHOLD) {
+//            return false;
+//        }
+//
+//        // Within acceptable range - apply correction
+//        return true;
+//    }
 }
