@@ -24,7 +24,7 @@ public class TestBotAbilities extends CharacterStats {
     public static class VisionConstants {
         public static double CAMERA_FORWARD_OFFSET = 6.5;  // TODO: Measure actual offset!
         public static double CAMERA_RIGHT_OFFSET = 0.0;
-        public static double CAMERA_HEADING_OFFSET = 0.0;
+        public static double CAMERA_HEADING_OFFSET = 0.0;  // = 0.0 If Robot & Camera face same direction
     }
 
     // ==================== CONFIGURATION APPLICATION ====================

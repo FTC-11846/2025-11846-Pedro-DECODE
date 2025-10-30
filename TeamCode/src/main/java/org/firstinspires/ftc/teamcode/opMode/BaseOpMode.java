@@ -46,6 +46,12 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 @Configurable
 public abstract class BaseOpMode extends OpMode {
 
+    // ==================== PANELS CONTROL ====================
+
+    public static class PanelsControl {  // NO @Configurable here!
+        public boolean triggerRefresh = false;
+    }
+
     // ==================== RELOCALIZATION CONFIGURATION ====================
 
     public static class RelocalizationConfig {
@@ -54,6 +60,8 @@ public abstract class BaseOpMode extends OpMode {
         public double maxPoseError = 24.0;        // Inches - reject if too far off
         public double blendRatio = 0.3;           // 30% vision, 70% odometry
         public double rateLimitSeconds = 0.5;     // Time between relocalization attempts
+        public boolean debugMode = false;       // Enable verbose relocalization telemetry
+
 
         // Diagnostic tracking
         public int updateAttempts = 0;
@@ -65,6 +73,7 @@ public abstract class BaseOpMode extends OpMode {
     }
 
     public static RelocalizationConfig relocalization = new RelocalizationConfig();
+    public static PanelsControl panelsControl = new PanelsControl();
     private ElapsedTime relocalizationTimer = new ElapsedTime();
 
     // ==================== SELECTION STATE ====================
@@ -135,13 +144,22 @@ public abstract class BaseOpMode extends OpMode {
 
             // Initialize hardware with restored robot
             initializeSubsystems();
+            hardwareInitialized = true;  // ✅ FIX #1: SET THE FLAG!
 
-            // Skip to position selection (alliance already known)
-            currentStage = InitStage.SELECT_POSITION;
-            selectedAllianceIndex = alliance == Alliance.RED ? 0 : 1;
-
-            telemetryM.debug("=== STATE RESTORED ===");
-            telemetryM.debug(RobotState.getStateString());
+            // FIX #2: If we have a saved pose, skip to READY (no position selection needed)
+            if (RobotState.lastKnownPose != null) {
+                currentStage = InitStage.READY;  // ✅ FIX #2: Skip to READY!
+                telemetryM.debug("=== STATE RESTORED ===");
+                telemetryM.debug(RobotState.getStateString());
+                telemetryM.debug("Using saved pose from Auto");
+            } else {
+                // No saved pose, but we have alliance - select position
+                currentStage = InitStage.SELECT_POSITION;
+                selectedAllianceIndex = alliance == Alliance.RED ? 0 : 1;
+                telemetryM.debug("=== STATE RESTORED ===");
+                telemetryM.debug(RobotState.getStateString());
+                telemetryM.debug("Please select starting position");
+            }
         } else {
             // Normal init - start from robot selection
             telemetryM.debug("=== INITIALIZATION ===");
@@ -153,6 +171,7 @@ public abstract class BaseOpMode extends OpMode {
 
         telemetryM.update(telemetry);
     }
+
 
     @Override
     public final void init_loop() {
@@ -176,18 +195,45 @@ public abstract class BaseOpMode extends OpMode {
 
     @Override
     public final void start() {
+        // ✅ FIX #3: Add safety check before creating follower
+        if (character == null) {
+            telemetryM.debug("ERROR: Character not initialized!");
+            telemetryM.update(telemetry);
+            requestOpModeStop();
+            return;
+        }
+
         // Create follower with selected starting pose
         follower = Constants.createFollower(hardwareMap, character);
 
-        // Set starting pose (restore from state or use selection)
+        // ✅ FIX #4: Better pose initialization logic
         Pose startPose;
         if (RobotState.hasState() && RobotState.lastKnownPose != null) {
+            // Coming from Auto - use saved pose
             startPose = RobotState.lastKnownPose;
             RobotState.clearState();  // Clear after use
-        } else {
+            telemetryM.debug("Using saved pose from Auto");
+        } else if (position != null) {
+            // Normal start - use selected position
             startPose = getStartingPose();
+            telemetryM.debug("Using selected starting position");
+        } else {
+            // ERROR: No pose available!
+            telemetryM.debug("ERROR: No starting pose available!");
+            telemetryM.debug("Position was not selected!");
+            telemetryM.update(telemetry);
+            requestOpModeStop();
+            return;
         }
+
         follower.setPose(startPose);
+
+        // Log the pose for debugging
+        telemetryM.debug(String.format("Follower pose set: X=%.1f Y=%.1f H=%.1f°",
+                startPose.getX(),
+                startPose.getY(),
+                Math.toDegrees(startPose.getHeading())));
+        telemetryM.update(telemetry);
 
         // Set coordinate system offsets for Panels field view
         com.bylazar.field.PanelsField.INSTANCE.getField()
@@ -196,6 +242,7 @@ public abstract class BaseOpMode extends OpMode {
         // Child class handles start behavior
         onStart();
     }
+
 
     @Override
     public final void stop() {
@@ -315,6 +362,15 @@ public abstract class BaseOpMode extends OpMode {
 
         // Display summary
         displayReadySummary();
+
+        // ✅ FIX #5: Add debug info for troubleshooting
+        telemetryM.debug("");
+        telemetryM.debug("=== DEBUG INFO ===");
+        telemetryM.debug("Hardware Init: " + (hardwareInitialized ? "YES" : "NO"));
+        telemetryM.debug("Character: " + (character != null ? character.toString() : "NULL"));
+        telemetryM.debug("Alliance: " + (alliance != null ? alliance.toString() : "NULL"));
+        telemetryM.debug("Position: " + (position != null ? position.toString() : "NULL"));
+        telemetryM.debug("Has Saved Pose: " + (RobotState.hasState() && RobotState.lastKnownPose != null ? "YES" : "NO"));
     }
 
     // ==================== SUBSYSTEM INITIALIZATION ====================
@@ -365,6 +421,7 @@ public abstract class BaseOpMode extends OpMode {
         if (relocalizationTimer.seconds() < relocalization.rateLimitSeconds) return;
         if (vision == null) return;
 
+        relocalizationTimer.reset();
         relocalization.updateAttempts++;
 
         AprilTagDetection bestTag = null;
@@ -404,6 +461,12 @@ public abstract class BaseOpMode extends OpMode {
             return;
         }
 
+        // After calculating visionPose and error:
+        String debugInfo = "";
+        if (relocalization.debugMode) {
+            debugInfo = getRelocalizationDebugInfo(visionPose, error);
+        }
+
         // Track correction amount
         relocalization.totalCorrectionDistance += error;
 
@@ -418,24 +481,42 @@ public abstract class BaseOpMode extends OpMode {
 
         follower.setPose(blendedPose);
         relocalization.updateSuccesses++;
-        relocalizationTimer.reset();
+
+        // At the very end, if debug mode, display details immediately
+        if (relocalization.debugMode) {
+            // visionPose and error are still in scope here!
+            telemetryM.debug("");
+            telemetryM.debug("=== RELOC DEBUG ===");
+            if (visionPose != null) {
+                telemetryM.debug(String.format("Calculated: X=%.1f Y=%.1f H=%.1f°",
+                        visionPose.getX(),
+                        visionPose.getY(),
+                        Math.toDegrees(visionPose.getHeading())));
+                telemetryM.debug(String.format("Current: X=%.1f Y=%.1f H=%.1f°",
+                        follower.getPose().getX(),
+                        follower.getPose().getY(),
+                        Math.toDegrees(follower.getPose().getHeading())));
+                telemetryM.debug(String.format("Error: %.1f in", error));
+            }
+        }
     }
 
 ////    **Add telemetry display method for relocalization Stats!**
     protected void displayRelocalizationStats() {
         int total = relocalization.updateAttempts;
-        if (total == 0) return;  // No updates yet
+        if (total == 0) return;
 
         double successRate = 100.0 * relocalization.updateSuccesses / total;
         double noTagRate = 100.0 * relocalization.updateFailedNoTag / total;
         double badPoseRate = 100.0 * relocalization.updateFailedBadPose / total;
-        double avgCorrection = relocalization.updateSuccesses > 0 ?
+        double avgError = relocalization.updateSuccesses > 0 ?
                 relocalization.totalCorrectionDistance / relocalization.updateSuccesses : 0;
 
         telemetryM.debug("=== RELOCALIZATION ===");
         telemetryM.debug(String.format("Updates: %d (%.0f%% success)", total, successRate));
         telemetryM.debug(String.format("No Tag: %.0f%% | Bad Pose: %.0f%%", noTagRate, badPoseRate));
-        telemetryM.debug(String.format("Avg Correction: %.1f in", avgCorrection));
+        telemetryM.debug(String.format("Avg Correction: %.1f in", avgError));  // ← ADDED THIS LINE
+        telemetryM.debug(String.format("Rejected Correction: %.1f in", avgError));  // ← Or call it "Avg Error"? Your choice on wording
     }
 
     /**
@@ -524,6 +605,25 @@ public abstract class BaseOpMode extends OpMode {
     protected Pose getStartingPose() {
         Pose bluePose = position.getBluePose();
         return FieldMirror.mirrorPose(bluePose, alliance);
+    }
+
+    /**
+     * Get debug details for relocalization (only shown when debug mode enabled)
+     * Returns formatted string with calculated pose and error details
+     */
+    private String getRelocalizationDebugInfo(Pose calculatedPose, double error) {
+        if (calculatedPose == null) return "";
+
+        return String.format(
+                "Calculated: X=%.1f Y=%.1f H=%.1f° | Error: %.1f in | Current: X=%.1f Y=%.1f H=%.1f°",
+                calculatedPose.getX(),
+                calculatedPose.getY(),
+                Math.toDegrees(calculatedPose.getHeading()),
+                error,
+                follower.getPose().getX(),
+                follower.getPose().getY(),
+                Math.toDegrees(follower.getPose().getHeading())
+        );
     }
 
     // ==================== DISPLAY HELPERS ====================
