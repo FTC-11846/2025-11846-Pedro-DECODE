@@ -37,26 +37,28 @@ public class Vision {
         public int decimation = 2;  // Higher = faster but less accurate
         public String webcamName = "Webcam 1";
     }
-    
+
     public static class GoalPositions {
-        public double blueGoalX = 10.0;
-        public double blueGoalY = 72.0;
-        public double redGoalX = 134.0;
-        public double redGoalY = 72.0;
-        
+        public double blueGoalX = 15.0;   // Center of BlueGoal AprilTag
+        public double blueGoalY = 129.0;
+        public double redGoalX = 129.0;   // Center of RedGoal AprilTag
+        public double redGoalY = 129.0;
+
+        // Shooting offsets - aim past the tag toward goal center
+        public double shootingOffsetX = 15.0;  // Horizontal offset
+        public double shootingOffsetY = 15.0;  // Forward toward wall
+
         /**
-         * Get the goal pose for the selected starting position
-         * Positions 0,1 = Red side → Red goal
-         * Positions 2,3 = Blue side → Blue goal
+         * Get shooting target pose (offset from tag for better accuracy)
+         * Red: +15,+15 from tag | Blue: -15,+15 from tag
          */
-        public Pose getGoalForStartPosition(int positionIndex) {
-            if (positionIndex < 2) {
-                // Red Near or Red Far → Red goal
-                return new Pose(redGoalX, redGoalY, 0);
-            } else {
-                // Blue Near or Blue Far → Blue goal
-                return new Pose(blueGoalX, blueGoalY, 0);
+        public Pose getShootingTarget(int tagId) {
+            if (tagId == tagIds.blueGoalTagId) {
+                return new Pose(blueGoalX - shootingOffsetX, blueGoalY + shootingOffsetY, 0);
+            } else if (tagId == tagIds.redGoalTagId) {
+                return new Pose(redGoalX + shootingOffsetX, redGoalY + shootingOffsetY, 0);
             }
+            return null;
         }
     }
     

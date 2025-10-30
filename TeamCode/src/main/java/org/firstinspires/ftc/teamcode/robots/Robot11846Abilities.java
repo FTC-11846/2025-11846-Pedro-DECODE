@@ -27,8 +27,8 @@ public class Robot11846Abilities extends CharacterStats {
     }
 
     public static class VisionConstants {
-        public static double CAMERA_FORWARD_OFFSET = 7.0;  // TODO: Measure actual offset!
-        public static double CAMERA_RIGHT_OFFSET = 0.0;
+        public static double CAMERA_FORWARD_OFFSET = 6.0;  // TODO: Measure actual offset!
+        public static double CAMERA_RIGHT_OFFSET = 2.5;
         public static double CAMERA_HEADING_OFFSET = 0.0;
     }
 

@@ -4,6 +4,7 @@ import static org.firstinspires.ftc.teamcode.pedroPathing.Tuning.draw;
 
 import android.annotation.SuppressLint;
 
+import com.bylazar.configurables.PanelsConfigurables;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -113,15 +114,20 @@ public class TeleOpDECODE extends BaseOpMode {
             } catch (Exception e) {
                 // Silently catch drawing errors - non-critical for robot function
             }
-        }    }
+        }
+
+        /**
+         * BaseOpMode in the Dashboard now has a True/False field to trigger a Panels Refresh
+         */
+        if (panelsControl.triggerRefresh) {
+            panelsControl.triggerRefresh = false;  // Reset BEFORE refresh
+            PanelsConfigurables.INSTANCE.refreshClass(this);
+        }
+    }
 
     // ==================== GP1: DRIVE CONTROLS ====================
 
     private void handleDriveControls() {
-        // Reset IMU if both triggers + A pressed
-        if (gamepad1.left_trigger > 0.5 && gamepad1.right_trigger > 0.5 && gamepad1.a) {
-            imu.resetYaw();
-        }
 
         // Check for driver override on rotation during tracking
         if (trackingEnabled && Math.abs(gamepad1.right_stick_x) > Shooter.autoAim.overrideThreshold) {
@@ -138,15 +144,13 @@ public class TeleOpDECODE extends BaseOpMode {
             rotationInput = -gamepad1.right_stick_x;
         }
 
-        /**  We haven't used this in over a month, delete on next code cleanout! */
-//        // Field-relative by default, robot-relative if holding left bumper
-//        boolean fieldRelative = !gamepad1.left_bumper;
-//        follower.setTeleOpDrive(
-//                -gamepad1.left_stick_y,
-//                -gamepad1.left_stick_x,
-//                rotationInput,
-//                fieldRelative
-//        );
+
+        /**
+         * Field-relative (traditional) drive control!!!  (all robot-centric stripped)
+         * NOTE: the really stupid inlay hint for the 4th param is Opposite! We must
+         * set it "true" for field-relative driving!
+         */
+        follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, rotationInput, true);
     }
 
     /**
@@ -164,28 +168,50 @@ public class TeleOpDECODE extends BaseOpMode {
         double headingError;
 
         if (result.success) {
-            // Tag visible - use direct measurement
-            shooter.setAutoAimVelocity(result.distanceInches, result.tagId);
-            autoAimSpinDownTimer.reset();
-            headingError = result.bearingDegrees;
-            lastAutoAimMessage = result.message;
-        } else {
-            // Tag lost - calculate from localization pose
+            // ====== VISION-BASED AUTO-AIM ======
+            // Tag is visible - calculate bearing to SHOOTING TARGET (not tag)
+
             Pose robotPose = follower.getPose();
-            Pose goalPose = getGoalPose();  // Based on alliance
+            Pose shootingTarget = Vision.goalPositions.getShootingTarget(result.tagId);
 
-            double dx = goalPose.getX() - robotPose.getX();
-            double dy = goalPose.getY() - robotPose.getY();
-
-            double bearingToGoal = Math.atan2(dy, dx);
+            // Calculate bearing to shooting target
+            double dx = shootingTarget.getX() - robotPose.getX();
+            double dy = shootingTarget.getY() - robotPose.getY();
+            double bearingToTarget = Math.atan2(dy, dx);
             double currentHeading = robotPose.getHeading();
 
-            // Calculate heading error in degrees
-            double errorRad = bearingToGoal - currentHeading;
-            // Normalize to [-π, π]
+            // Calculate heading error
+            double errorRad = bearingToTarget - currentHeading;
             while (errorRad > Math.PI) errorRad -= 2 * Math.PI;
             while (errorRad < -Math.PI) errorRad += 2 * Math.PI;
+            headingError = Math.toDegrees(errorRad);
 
+            // Use vision-measured distance to TAG for shooter velocity
+            shooter.setAutoAimVelocity(result.distanceInches, result.tagId);
+            autoAimSpinDownTimer.reset();
+
+            lastAutoAimMessage = String.format("Vision track (%.1f in, %.1f°)",
+                    result.distanceInches, headingError);
+
+        } else {
+            // ====== LOCALIZATION-BASED AUTO-AIM ======
+            // Tag lost - calculate from pose to SHOOTING TARGET
+
+            Pose robotPose = follower.getPose();
+            Pose shootingTarget = Vision.goalPositions.getShootingTarget(
+                    alliance.isBlue() ? Vision.tagIds.blueGoalTagId : Vision.tagIds.redGoalTagId
+            );
+
+            double dx = shootingTarget.getX() - robotPose.getX();
+            double dy = shootingTarget.getY() - robotPose.getY();
+
+            double bearingToTarget = Math.atan2(dy, dx);
+            double currentHeading = robotPose.getHeading();
+
+            // Calculate heading error
+            double errorRad = bearingToTarget - currentHeading;
+            while (errorRad > Math.PI) errorRad -= 2 * Math.PI;
+            while (errorRad < -Math.PI) errorRad += 2 * Math.PI;
             headingError = Math.toDegrees(errorRad);
 
             // Calculate distance for shooter velocity
@@ -193,7 +219,7 @@ public class TeleOpDECODE extends BaseOpMode {
             shooter.setAutoAimVelocity(distance,
                     alliance.isBlue() ? Vision.tagIds.blueGoalTagId : Vision.tagIds.redGoalTagId);
 
-            lastAutoAimMessage = String.format("Tracking via pose (%.1f in, %.1f°)",
+            lastAutoAimMessage = String.format("Pose track (%.1f in, %.1f°)",
                     distance, headingError);
         }
 
@@ -203,11 +229,7 @@ public class TeleOpDECODE extends BaseOpMode {
         }
 
         // P controller
-        double correction = headingError * Shooter.autoAim.headingPGain;
-        correction = Math.max(-Shooter.autoAim.maxTrackingRotation,
-                Math.min(Shooter.autoAim.maxTrackingRotation, correction));
-
-        return correction;
+        return headingError * Shooter.autoAim.headingPGain;
     }
 
     /**
