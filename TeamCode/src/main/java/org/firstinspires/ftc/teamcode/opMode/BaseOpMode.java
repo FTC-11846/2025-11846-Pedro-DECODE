@@ -501,7 +501,7 @@ public abstract class BaseOpMode extends OpMode {
         }
     }
 
-////    **Add telemetry display method for relocalization Stats!**
+    ////    **Add telemetry display method for relocalization Stats!**
     protected void displayRelocalizationStats() {
         int total = relocalization.updateAttempts;
         if (total == 0) return;
@@ -671,10 +671,23 @@ public abstract class BaseOpMode extends OpMode {
         telemetryM.debug("=== READY TO START ===");
         telemetryM.debug("Robot: " + character.toString() + " ✓");
         telemetryM.debug("Alliance: " + alliance.toString() + " ✓");
-        telemetryM.debug("Position: " + alliance + " " + position + " ✓");
+
+        // Handle position display - may be null when coming from Auto
+        if (position != null) {
+            telemetryM.debug("Position: " + alliance + " " + position + " ✓");
+        } else {
+            telemetryM.debug("Position: (From Auto) ✓");
+        }
         telemetryM.debug("");
 
-        Pose startPose = getStartingPose();
+        // Get starting pose - use saved pose if available, otherwise use selected position
+        Pose startPose;
+        if (RobotState.hasState() && RobotState.lastKnownPose != null) {
+            startPose = RobotState.lastKnownPose;
+        } else {
+            startPose = getStartingPose();
+        }
+
         telemetryM.debug(String.format("Start Pose (Pedro): X=%.1f Y=%.1f H=%.1f°",
                 startPose.getX(),
                 startPose.getY(),
