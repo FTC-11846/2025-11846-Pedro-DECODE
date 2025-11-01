@@ -48,12 +48,12 @@ public class Auto1BallPark extends BaseOpMode {
         public static double SHOOT_X = 72.0;  // Mid-field (field center)
         public static double SHOOT_Y_NEAR = 30.0;  // Near audience side
         public static double SHOOT_Y_FAR = 114.0;  // Far side
-        public static double SHOOT_HEADING_DEG = 180.0;  // Face blue wall (toward goal)
+        public static double SHOOT_HEADING_DEG = 125.0;  // Face blue wall (toward goal)
         
         // Park position (BLUE coordinates - observation zone)
         public static double PARK_X = 100.0;  // Closer to red wall
         public static double PARK_Y_NEAR = 40.0;
-        public static double PARK_Y_FAR = 104.0;
+        public static double PARK_Y_FAR = 80.0;
         public static double PARK_HEADING_DEG = 270.0;  // Face audience
         
         // Timeouts (seconds)
@@ -305,7 +305,7 @@ public class Auto1BallPark extends BaseOpMode {
         if (velocityError < AutoConstants.VELOCITY_TOLERANCE || stateTimer.seconds() > 1.5) {
             // Shooter ready (or timeout) - feed ball
             if (!ballFeed.isLeftFeeding()) {
-                ballFeed.startFeed();
+                ballFeed.feedLeft();
             }
         }
         
