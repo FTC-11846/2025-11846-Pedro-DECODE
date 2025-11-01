@@ -11,10 +11,10 @@ public class Robot11846Abilities extends CharacterStats {
     // ==================== TUNABLE CONSTANTS ====================
 
     public static class ShooterConstants {
-        public static double HIGH_VELOCITY_RPM = 5500;
-        public static double LOW_VELOCITY_RPM = 1500;
+        public static double HIGH_VELOCITY_RPM = 3000;
+        public static double LOW_VELOCITY_RPM = 2600;
         public static double BASELINE_POWER = 395.0;
-        public static double PIDF_P = 10.0;
+        public static double PIDF_P = 0.1;
     }
 
     public static class BallFeedConstants {

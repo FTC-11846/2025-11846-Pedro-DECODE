@@ -91,6 +91,7 @@ public abstract class BaseOpMode extends OpMode {
     private int selectedRobotIndex = 0;
     private int selectedAllianceIndex = 0;
     private int selectedPositionIndex = 0;
+    private Pose savedPoseFromAuto = null;  // Store pose from Auto transition
 
     // Flag to track if hardware initialized
     private boolean hardwareInitialized = false;
@@ -132,6 +133,7 @@ public abstract class BaseOpMode extends OpMode {
             // Restore from saved state
             character = RobotState.activeRobot;
             alliance = RobotState.activeAlliance;
+            savedPoseFromAuto = RobotState.lastKnownPose;  // ← SAVE State here, so it's available in Start, but still clears between runs!
             MainCharacter.ACTIVE_ROBOT = character;
 
             // ⚡ NOW init IMU with correct robot config
@@ -205,7 +207,7 @@ public abstract class BaseOpMode extends OpMode {
         Pose startPose;
         if (RobotState.hasState() && RobotState.lastKnownPose != null) {
             // Coming from Auto - use saved pose
-            startPose = RobotState.lastKnownPose;
+            startPose = savedPoseFromAuto;
             RobotState.clearState();  // Clear after use
             telemetryM.debug("Using saved pose from Auto");
         } else if (position != null) {
