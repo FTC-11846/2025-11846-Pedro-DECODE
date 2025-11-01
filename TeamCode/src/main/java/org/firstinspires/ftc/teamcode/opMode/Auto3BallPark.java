@@ -219,9 +219,9 @@ public class Auto3BallPark extends BaseOpMode {
         Pose startPose = getStartingPose();
         
         // Determine positions based on NEAR vs FAR
-        double shootY = position.toString().contains("Near") ? 
+        double shootY = startPoseInSelectMenu.toString().contains("Near") ?
             AutoConstants.SHOOT_Y_NEAR : AutoConstants.SHOOT_Y_FAR;
-        double parkY = position.toString().contains("Near") ?
+        double parkY = startPoseInSelectMenu.toString().contains("Near") ?
             AutoConstants.PARK_Y_NEAR : AutoConstants.PARK_Y_FAR;
         
         // Build path to shooting position (PEDRO COORDINATES)
@@ -412,7 +412,7 @@ public class Auto3BallPark extends BaseOpMode {
         telemetryM.debug("=== AUTONOMOUS ===");
         telemetryM.debug("Robot: " + character.toString());
         telemetryM.debug("Alliance: " + alliance.toString());
-        telemetryM.debug("Position: " + position.toString());
+        telemetryM.debug("Position: " + startPoseInSelectMenu.toString());
         telemetryM.debug("");
         
         telemetryM.debug("State: " + currentState);

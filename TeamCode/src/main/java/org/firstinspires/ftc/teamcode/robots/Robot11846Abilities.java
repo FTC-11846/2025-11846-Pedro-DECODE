@@ -14,7 +14,7 @@ public class Robot11846Abilities extends CharacterStats {
         public static double HIGH_VELOCITY_RPM = 3000;
         public static double LOW_VELOCITY_RPM = 2600;
         public static double BASELINE_POWER = 395.0;
-        public static double PIDF_P = 0.1;
+        public static double PIDF_P = 2.0;
     }
 
     public static class BallFeedConstants {
