@@ -431,7 +431,7 @@ public class TeleOpDECODE extends BaseOpMode {
         telemetryM.debug("=== ROBOT STATUS ===");
         telemetryM.debug("Robot: " + character.toString());
         telemetryM.debug("Alliance: " + alliance.toString());
-        telemetryM.debug("Position: " + position.toString());
+        telemetryM.debug("Position: " + (startPoseInSelectMenu != null ? startPoseInSelectMenu.toString() : "From Auto"));
         telemetryM.debug(String.format("Pose: X=%.1f Y=%.1f H=%.1f°",
                 follower.getPose().getX(),
                 follower.getPose().getY(),
