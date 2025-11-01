@@ -84,14 +84,9 @@ public class BallFeed {
 
     @IgnoreConfigurable
     private final double holdDuration;
-
-    @IgnoreConfigurable
+    private final double idlePower;  // NEW
     private final double feedIdlePos;
-
-    @IgnoreConfigurable
     private final double feedLeftSweep;
-
-    @IgnoreConfigurable
     private final double feedRightSweep;
 
     // ==================== CONSTRUCTOR ====================
@@ -115,6 +110,7 @@ public class BallFeed {
         this.feedIdlePos = stats.getFeedIdlePos();
         this.feedLeftSweep = stats.getFeedLeftSweep();
         this.feedRightSweep = stats.getFeedRightSweep();
+        this.idlePower = stats.getIdlePower();  // NEW
 
         // Initialize hardware based on mode
         switch (mode) {
@@ -366,7 +362,7 @@ public class BallFeed {
             case RETURNING:
             case IDLE:
             default:
-                return 0.0;
+                return idlePower;  // CHANGED: was 0.0, now uses robot-specific value
         }
     }
 

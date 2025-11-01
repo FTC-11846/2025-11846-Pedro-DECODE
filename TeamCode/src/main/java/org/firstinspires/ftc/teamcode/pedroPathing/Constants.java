@@ -28,10 +28,10 @@ public class Constants {
     // 🔧 TUNING: Change this to tune a different robot! 🔧
     //  (for Pedro Pathing Tuning OpMode, provides the 2nd parameter for createFollower()
     //////////////////////////////////  \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-// =========================CHANGE THIS TO TUNE===============================
+// =======================TODO: CHANGE THIS WHEN PUSHING CODE========================= //
     private static final MainCharacter TUNING_ROBOT = MainCharacter.ROBOT_22154;  // TEST_BOT, ROBOT_11846, ROBOT_22154
 // =========================DID YOU CHANGE IT?!===============================
-//  \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\   /////////////////////////////////////
+///  \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\  //////////////////////////////////////
 
     // Shared path constraints (can be made robot-specific if needed)
     public static PathConstraints pathConstraints = new PathConstraints(0.99, 100, 1, 1);
@@ -108,7 +108,7 @@ public class Constants {
             .distanceUnit(DistanceUnit.INCH)
             .hardwareMapName("pinpoint")
             .encoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD)
-            .forwardEncoderDirection(GoBildaPinpointDriver.EncoderDirection.REVERSED)
+            .forwardEncoderDirection(GoBildaPinpointDriver.EncoderDirection.FORWARD)
             .strafeEncoderDirection(GoBildaPinpointDriver.EncoderDirection.REVERSED);
 
     // ==================== ROBOT 11846 CONSTANTS ====================
@@ -139,8 +139,8 @@ public class Constants {
             .distanceUnit(DistanceUnit.INCH)
             .hardwareMapName("pinpoint")
             .encoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD)
-            .forwardEncoderDirection(GoBildaPinpointDriver.EncoderDirection.REVERSED)
-            .strafeEncoderDirection(GoBildaPinpointDriver.EncoderDirection.REVERSED);
+            .forwardEncoderDirection(GoBildaPinpointDriver.EncoderDirection.FORWARD)
+            .strafeEncoderDirection(GoBildaPinpointDriver.EncoderDirection.FORWARD);
 
 // ----------------------------------------------------------------------
 // INITIALIZATION AND HELPER METHODS

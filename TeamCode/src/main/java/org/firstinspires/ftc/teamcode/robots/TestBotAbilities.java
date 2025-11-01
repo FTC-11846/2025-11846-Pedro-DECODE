@@ -48,6 +48,10 @@ public class TestBotAbilities extends CharacterStats {
         visionConfig.cameraForwardOffset = VisionConstants.CAMERA_FORWARD_OFFSET;
         visionConfig.cameraRightOffset = VisionConstants.CAMERA_RIGHT_OFFSET;
         visionConfig.cameraHeadingOffset = VisionConstants.CAMERA_HEADING_OFFSET;
+
+        // IMU config
+        imuConfig.logoFacingDirection = "RIGHT";
+        imuConfig.usbFacingDirection = "UP";
     }
 
     // ==================== IDENTITY ====================

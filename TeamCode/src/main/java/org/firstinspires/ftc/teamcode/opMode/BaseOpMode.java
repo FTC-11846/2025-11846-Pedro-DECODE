@@ -127,20 +127,15 @@ public abstract class BaseOpMode extends OpMode {
     public final void init() {
         telemetryM = PanelsTelemetry.INSTANCE.getTelemetry();
 
-        // Initialize IMU early (needed for follower later)
-        imu = hardwareMap.get(IMU.class, "imu");
-        RevHubOrientationOnRobot orientation = new RevHubOrientationOnRobot(
-                RevHubOrientationOnRobot.LogoFacingDirection.RIGHT,
-                RevHubOrientationOnRobot.UsbFacingDirection.UP
-        );
-        imu.initialize(new IMU.Parameters(orientation));
-
         // Check if we have saved state from previous OpMode (Auto → TeleOp)
         if (RobotState.hasState()) {
             // Restore from saved state
             character = RobotState.activeRobot;
             alliance = RobotState.activeAlliance;
             MainCharacter.ACTIVE_ROBOT = character;
+
+            // ⚡ NOW init IMU with correct robot config
+            initializeIMU();
 
             // Initialize hardware with restored robot
             initializeSubsystems();
@@ -332,7 +327,11 @@ public abstract class BaseOpMode extends OpMode {
             currentStage = InitStage.READY;
 
             // NOW initialize hardware (user has confirmed all choices)
+
             if (!hardwareInitialized) {
+                // ⚡ Initialize IMU with this robot's config
+                initializeIMU();
+
                 initializeSubsystems();
                 hardwareInitialized = true;
             }
@@ -375,8 +374,28 @@ public abstract class BaseOpMode extends OpMode {
 
     // ==================== SUBSYSTEM INITIALIZATION ====================
 
+    // robot-specific orientation
+    private void initializeIMU() {
+        imu = hardwareMap.get(IMU.class, "imu");
+
+        // Get robot-specific orientation
+        CharacterStats stats = character.getAbilities();
+        RevHubOrientationOnRobot orientation = new RevHubOrientationOnRobot(
+                stats.getIMULogoDirection(),
+                stats.getIMUUsbDirection()
+        );
+
+        imu.initialize(new IMU.Parameters(orientation));
+    }
+
     private void initializeSubsystems() {
-        shooter = new Shooter(hardwareMap, character);
+
+            // If IMU not yet initialized, do it now
+            if (imu == null) {
+                initializeIMU();
+            }
+
+            shooter = new Shooter(hardwareMap, character);
         ballFeed = new BallFeed(hardwareMap, character);
         vision = new Vision(hardwareMap);
 

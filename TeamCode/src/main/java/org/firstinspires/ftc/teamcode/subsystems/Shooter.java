@@ -28,12 +28,12 @@ public class Shooter {
     // Used to scale shooter RPM's
     public static class VelocityControl {
         public double minPowerRPM = 1500;
-        public double maxPowerRPM = 3500;
+        public double maxPowerRPM = 4500;
     }
     
     public static class AutoAim {
         public double linearCorrectionFactor = 24.0;
-        public double headingPGain = 0.05;
+        public double headingPGain = 0.01;
         public double maxTrackingRotation = 0.3;
         public double headingDeadbandDeg = 2.0;
         public double singleShotDuration = 120.0;
@@ -45,7 +45,7 @@ public class Shooter {
     public static class PIDF {
         public double pidfI = 0.0;
         public double pidfD = 0.0;
-        public double nominalVoltage = 13.0;
+        public double nominalVoltage = 12.5;
         public double maxTicksPerSec = 3000.0;
         public boolean debugRunWithoutEncoder = false;
         public double debugPower = 1.0;

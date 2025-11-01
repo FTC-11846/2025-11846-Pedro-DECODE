@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.robots;
 
 import com.bylazar.configurables.annotations.Configurable;
 import com.pedropathing.geometry.Pose;
+import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 
 /**
  * CharacterStats - Abstract base class with robot-specific configuration
@@ -21,6 +22,8 @@ public abstract class CharacterStats {
     public static BallFeedConfig ballFeedConfig = new BallFeedConfig();
     public static IntakeConfig intakeConfig = new IntakeConfig();
     public static VisionConfig visionConfig = new VisionConfig();
+    public static IMUConfig imuConfig = new IMUConfig();  // ← ADD THIS
+
 
     // ==================== NESTED CONFIG CLASSES ====================
     
@@ -40,6 +43,7 @@ public abstract class CharacterStats {
         public double feedDuration = 0.25;
         public double reverseDuration = 0.0;  // 22154: prevents double-feed
         public double holdDuration = 0.0;      // 11846: gate hold time
+        public double idlePower = 0.0;  // NEW: Power when idle (negative = slow reverse)
 
         // NEW: Servo position control (for 11846)
         public double ballFeedIdlePos = 0.5;      // Center/neutral position
@@ -55,6 +59,11 @@ public abstract class CharacterStats {
         public double cameraForwardOffset = 0.0;  // Inches forward from robot center (+ = forward)
         public double cameraRightOffset = 0.0;    // Inches right from robot center (+ = right)
         public double cameraHeadingOffset = 0.0;  // Radians CCW from robot heading
+    }
+
+    public static class IMUConfig {
+        public String logoFacingDirection = "RIGHT";  // RIGHT, LEFT, UP, DOWN, FORWARD, BACKWARD
+        public String usbFacingDirection = "UP";      // RIGHT, LEFT, UP, DOWN, FORWARD, BACKWARD
     }
 
 
@@ -164,6 +173,15 @@ public abstract class CharacterStats {
      */
     public double getFeedHoldDuration() {
         return ballFeedConfig.holdDuration;
+    }
+
+    /**
+     * Get idle power for CRServo feed motors (0 = stopped, negative = slow reverse)
+     * 22154: Maintains back-pressure to prevent ball creep
+     * TestBot/11846: No idle power
+     */
+    public double getIdlePower() {
+        return ballFeedConfig.idlePower;
     }
 
     public double getFeedIdlePos() {
@@ -330,6 +348,22 @@ public abstract class CharacterStats {
      */
     public double getCameraHeadingOffset() {
         return visionConfig.cameraHeadingOffset;
+    }
+
+    // ==================== IMU CONFIGURATION ====================
+
+    /**
+     * Get IMU logo facing direction for this robot
+     */
+    public RevHubOrientationOnRobot.LogoFacingDirection getIMULogoDirection() {
+        return RevHubOrientationOnRobot.LogoFacingDirection.valueOf(imuConfig.logoFacingDirection);
+    }
+
+    /**
+     * Get IMU USB facing direction for this robot
+     */
+    public RevHubOrientationOnRobot.UsbFacingDirection getIMUUsbDirection() {
+        return RevHubOrientationOnRobot.UsbFacingDirection.valueOf(imuConfig.usbFacingDirection);
     }
 
     // ==================== CONFIGURATION APPLICATION ====================

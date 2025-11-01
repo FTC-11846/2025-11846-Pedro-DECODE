@@ -60,6 +60,10 @@ public class Robot11846Abilities extends CharacterStats {
         visionConfig.cameraForwardOffset = VisionConstants.CAMERA_FORWARD_OFFSET;
         visionConfig.cameraRightOffset = VisionConstants.CAMERA_RIGHT_OFFSET;
         visionConfig.cameraHeadingOffset = VisionConstants.CAMERA_HEADING_OFFSET;
+
+        // IMU config
+        imuConfig.logoFacingDirection = "LEFT";
+        imuConfig.usbFacingDirection = "DOWN";
     }
 
     // ==================== IDENTITY ====================

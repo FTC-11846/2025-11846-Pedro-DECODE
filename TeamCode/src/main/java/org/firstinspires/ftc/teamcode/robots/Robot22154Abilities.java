@@ -24,11 +24,13 @@ public class Robot22154Abilities extends CharacterStats {
         public static double FEED_DURATION = 0.25;
         public static double REVERSE_DURATION = 0.0;  // Prevent double-feed
         public static double HOLD_DURATION = 0.0;     // N/A for 22154
+        public static double IDLE_POWER = -0.2;  // NEW: Slow reverse when idle
+
     }
     
     public static class VisionConstants {
         public static double CAMERA_FORWARD_OFFSET = 6.5;  // TODO: Measure actual offset!
-        public static double CAMERA_RIGHT_OFFSET = 0.0;
+        public static double CAMERA_RIGHT_OFFSET = 2.5;
         public static double CAMERA_HEADING_OFFSET = 0.0;
     }
 
@@ -46,6 +48,8 @@ public class Robot22154Abilities extends CharacterStats {
         ballFeedConfig.feedDuration = BallFeedConstants.FEED_DURATION;
         ballFeedConfig.reverseDuration = BallFeedConstants.REVERSE_DURATION;
         ballFeedConfig.holdDuration = BallFeedConstants.HOLD_DURATION;
+        ballFeedConfig.idlePower = BallFeedConstants.IDLE_POWER;  // NEW
+
 
         intakeConfig.intakeModeName = getIntakeMode().name();
 
@@ -53,6 +57,10 @@ public class Robot22154Abilities extends CharacterStats {
         visionConfig.cameraForwardOffset = VisionConstants.CAMERA_FORWARD_OFFSET;
         visionConfig.cameraRightOffset = VisionConstants.CAMERA_RIGHT_OFFSET;
         visionConfig.cameraHeadingOffset = VisionConstants.CAMERA_HEADING_OFFSET;
+
+        // IMU config
+        imuConfig.logoFacingDirection = "UP";
+        imuConfig.usbFacingDirection = "RIGHT";
     }
 
     // ==================== IDENTITY ====================
