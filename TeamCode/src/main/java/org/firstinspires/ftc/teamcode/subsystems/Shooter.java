@@ -28,14 +28,14 @@ public class Shooter {
     // Used to scale shooter RPM's
     public static class VelocityControl {
         public double minPowerRPM = 3000;
-        public double maxPowerRPM = 4000;
+        public double maxPowerRPM = 5500;
     }
     
     public static class AutoAim {
         public double linearCorrectionFactor = 24.0;
-        public double headingPGain = 0.01;
+        public double headingPGain = 0.02;
         public double maxTrackingRotation = 0.3;
-        public double headingDeadbandDeg = 2.0;
+        public double headingDeadbandDeg = 1.0;
         public double singleShotDuration = 120.0;
         public double autoAimSpinDownTime = 120.0;
         public double overrideThreshold = 0.15;
@@ -97,7 +97,7 @@ public class Shooter {
         
         // Initialize left/primary motor (all robots have this)
         shooterMotorL = hardwareMap.get(DcMotorEx.class, stats.getShooterMotorLName());
-        if(stats.getShortName() == "TB"){
+        if(stats.getShortName() == "TB" ||stats.getShortName() == "11846"){
             shooterMotorL.setDirection(DcMotorSimple.Direction.FORWARD);
         }else{
             shooterMotorL.setDirection(DcMotorSimple.Direction.REVERSE);
@@ -111,7 +111,11 @@ public class Shooter {
         // Initialize right motor only if robot has dual shooters
         if (stats.hasDualShooters()) {
             shooterMotorR = hardwareMap.get(DcMotorEx.class, stats.getShooterMotorRName());
-            shooterMotorR.setDirection(DcMotorSimple.Direction.FORWARD);
+            if(stats.getShortName() == "11846"){
+                shooterMotorR.setDirection(DcMotorSimple.Direction.REVERSE);
+            }else{
+                shooterMotorR.setDirection(DcMotorSimple.Direction.FORWARD);
+            }
             
             if (pidf.debugRunWithoutEncoder) {
                 shooterMotorR.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
