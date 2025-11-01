@@ -39,7 +39,7 @@ import java.util.List;
  */
 @Autonomous(name = "Auto - 1 Ball + Park", group = "Competition", preselectTeleOp = "TeleOp - Competition")
 @Configurable
-public class Auto1BallPark extends BaseOpMode {
+public class Auto3BallPark extends BaseOpMode {
     
     // ==================== AUTONOMOUS CONSTANTS (PEDRO COORDINATES) ====================
     
@@ -58,8 +58,8 @@ public class Auto1BallPark extends BaseOpMode {
         
         // Timeouts (seconds)
         public static double MAX_AUTO_AIM_TIME = 5.0;  // Was 3.0
-        public static double SHOOT_DURATION = 1.5;  // Time to feed ball
-        public static double PARK_TIMEOUT = 8.0;  // Was 5.0
+        public static double SHOOT_DURATION = 8.0;  // Time to feed ball
+        public static double PARK_TIMEOUT = 3.0;  // Was 5.0
         public static double STUCK_TIMEOUT = 3.0;  // NEW: Detect if not moving
         
         // Auto-aim distance thresholds (inches)
@@ -101,7 +101,14 @@ public class Auto1BallPark extends BaseOpMode {
     // Stuck detection
     private Pose lastStuckCheckPose;
     private ElapsedTime stuckCheckTimer = new ElapsedTime();
-    
+
+    private boolean firstShotFired = false;
+    private boolean secondShotFired = false;
+    private boolean thridShotFired = false;
+    private ElapsedTime shotTimer = new ElapsedTime();
+
+
+
     // ==================== START ====================
     
     @Override
@@ -116,6 +123,7 @@ public class Auto1BallPark extends BaseOpMode {
         currentState = AutoState.MOVE_TO_SHOOT;
         stateTimer.reset();
         autoTimer.reset();
+        shotTimer.reset();
         
         // Initialize stuck detection
         lastStuckCheckPose = follower.getPose();
@@ -301,16 +309,30 @@ public class Auto1BallPark extends BaseOpMode {
         double velocityError = Math.abs(
             shooter.getTargetVelocityRPM() - shooter.getActualVelocityRPM()
         );
-        
         if (velocityError < AutoConstants.VELOCITY_TOLERANCE || stateTimer.seconds() > 1.5) {
             // Shooter ready (or timeout) - feed ball
-            if (!ballFeed.isLeftFeeding()) {
-                ballFeed.feedLeft();
+            if(shotTimer.seconds() > 1){
+                //Sufficient time between shots
+                if (!ballFeed.isLeftFeeding() && !firstShotFired) {
+                    ballFeed.feedLeft();
+                    firstShotFired = true;
+                    shotTimer.reset();
+                } else if(!ballFeed.isRightFeeding() && firstShotFired){
+                    ballFeed.feedRight();
+                    secondShotFired = true;
+                    shotTimer.reset();
+                } else if(secondShotFired){
+                    intake.startIntakeOne();
+                    intake.startIntakeTwo();
+                    thridShotFired = true;
+                    shotTimer.reset();
+                }
             }
+
         }
         
         // Wait for shoot duration
-        if (stateTimer.seconds() > AutoConstants.SHOOT_DURATION) {
+        if (stateTimer.seconds() > AutoConstants.SHOOT_DURATION || (shotTimer.seconds() > 1 && thridShotFired)) {
             shooter.stop();
             ballFeed.stopFeed();
             

@@ -28,7 +28,7 @@ public class Shooter {
     // Used to scale shooter RPM's
     public static class VelocityControl {
         public double minPowerRPM = 1500;
-        public double maxPowerRPM = 4300;
+        public double maxPowerRPM = 3850;
     }
     
     public static class AutoAim {
