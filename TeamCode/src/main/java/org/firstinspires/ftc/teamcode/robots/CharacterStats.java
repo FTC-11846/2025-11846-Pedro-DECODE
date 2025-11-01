@@ -36,7 +36,7 @@ public abstract class CharacterStats {
         public double highVelocityRPM = 0;
         public double lowVelocityRPM = 0;
         public double baselinePower = 0;
-        public double pidfP = 0;
+        public double pidfP = 2;
     }
 
     public static class BallFeedConfig {
