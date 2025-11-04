@@ -1,7 +1,6 @@
 package org.firstinspires.ftc.teamcode.robots;
 
 import com.bylazar.configurables.annotations.Configurable;
-import com.pedropathing.geometry.Pose;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 
 /**
@@ -277,19 +276,18 @@ public abstract class CharacterStats {
     }
     
     // ==================== MECHANISM CONFIGURATION ====================
-    
     /**
-     * Does this robot have a folding mechanism?
+     * Does this robot have an endgame mechanism?
      */
-    public boolean hasFoldingMechanism() {
-        return false;
+    public EndgameSystem endgameMechanism() {
+        return EndgameSystem.NONE;
     }
-    
+
     /**
-     * Does this robot have lifters?
+     * Get the hardware name of the folding mechanism motor (null if no folding)
      */
-    public boolean hasLifters() {
-        return false;
+    public String getFoldMotorName() {
+        return null;
     }
     
     /**
@@ -383,6 +381,12 @@ public abstract class CharacterStats {
         SINGLE_CRSERVO,           // TestBot: 1 CRServo
         DUAL_CRSERVO_INDEPENDENT, // 22154: 2 CRServos, independent control
         DUAL_SERVO_GATES          // 11846: 2 Position Servos (gates)
+    }
+
+    public enum EndgameSystem {
+        NONE,           // TestBot
+        FOLD, // 11846
+        LIFT, // 22154
     }
     
     public enum IntakeMode {

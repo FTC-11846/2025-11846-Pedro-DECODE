@@ -26,11 +26,11 @@ public class ColorSensors {
     public static class ColorThresholds {
         // HSV hue thresholds (0-360 degrees)
         public double redHueMin = 0.0;
-        public double redHueMax = 30.0;
-        public double blueHueMin = 200.0;
-        public double blueHueMax = 260.0;
-        public double yellowHueMin = 45.0;
-        public double yellowHueMax = 75.0;
+        public double redHueMax = 360.0;
+        public double blueHueMin = 0.0;
+        public double blueHueMax = 360.0;
+        public double yellowHueMin = 0.0;
+        public double yellowHueMax = 360.0;
         
         // Minimum saturation to consider color valid (0-1)
         public double minSaturation = 0.3;

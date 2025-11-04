@@ -15,6 +15,7 @@
     import org.firstinspires.ftc.teamcode.subsystems.BallFeed;
     import org.firstinspires.ftc.teamcode.robots.CharacterStats;
     import org.firstinspires.ftc.teamcode.subsystems.ColorSensors;
+    import org.firstinspires.ftc.teamcode.subsystems.Endgame;
     import org.firstinspires.ftc.teamcode.subsystems.Intake;
     import org.firstinspires.ftc.teamcode.subsystems.LED;
     import org.firstinspires.ftc.teamcode.subsystems.MainCharacter;
@@ -106,6 +107,7 @@
         // ==================== COMMON SUBSYSTEMS ====================
 
         protected Shooter shooter;
+        protected Endgame endgame;
         protected BallFeed ballFeed;
         protected Vision vision;
         protected LED led;  // null if robot doesn't have LEDs
@@ -404,6 +406,7 @@
                 }
 
                 shooter = new Shooter(hardwareMap, character);
+                endgame = new Endgame(hardwareMap, character);
             ballFeed = new BallFeed(hardwareMap, character);
             vision = new Vision(hardwareMap);
 

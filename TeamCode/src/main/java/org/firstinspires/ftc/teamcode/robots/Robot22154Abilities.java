@@ -178,8 +178,8 @@ public class Robot22154Abilities extends CharacterStats {
     // ==================== MECHANISM CONFIGURATION ====================
     
     @Override
-    public boolean hasLifters() {
-        return true;
+    public EndgameSystem endgameMechanism() {
+        return EndgameSystem.LIFT;
     }
     
     @Override

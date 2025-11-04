@@ -104,7 +104,7 @@ public class Robot11846Abilities extends CharacterStats {
 
     @Override
     public BallFeedMode getBallFeedMode() {
-        return BallFeedMode.DUAL_SERVO_GATES;
+        return BallFeedMode.DUAL_CRSERVO_INDEPENDENT;
     }
     
     @Override
@@ -171,9 +171,12 @@ public class Robot11846Abilities extends CharacterStats {
     // ==================== MECHANISM CONFIGURATION ====================
     
     @Override
-    public boolean hasFoldingMechanism() {
-        return true;  // Has folding mechanism
+    public EndgameSystem endgameMechanism() {
+        return EndgameSystem.FOLD;  // Has folding mechanism
     }
+
+    @Override
+    public String getFoldMotorName(){return "foldMotor";}
 
 
 }

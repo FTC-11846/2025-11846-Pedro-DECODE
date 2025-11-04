@@ -121,7 +121,7 @@ public class BallFeed {
                 break;
 
             case DUAL_CRSERVO_INDEPENDENT:
-                // Robot 22154: Two CRServos for independent feed control
+                // Robot 11846 & 22154: Two CRServos for independent feed control
                 motorL = hardwareMap.get(CRServo.class, stats.getBallFeedMotorLName());
                 motorR = hardwareMap.get(CRServo.class, stats.getBallFeedMotorRName());
                 ((CRServo) motorL).setDirection(CRServo.Direction.REVERSE);
@@ -129,7 +129,7 @@ public class BallFeed {
                 break;
 
             case DUAL_SERVO_GATES:
-                // Robot 11846: Two position servos as gates
+                // Currently Unused: Two position servos as gates
                 motorL = hardwareMap.get(Servo.class, stats.getBallFeedMotorLName());
                 motorR = hardwareMap.get(Servo.class, stats.getBallFeedMotorRName());
                 // Initialize to idle position

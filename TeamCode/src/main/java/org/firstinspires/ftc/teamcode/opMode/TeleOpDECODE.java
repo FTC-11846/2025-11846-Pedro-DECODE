@@ -11,6 +11,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.robots.CharacterStats;
 import org.firstinspires.ftc.teamcode.subsystems.ColorSensors;
+import org.firstinspires.ftc.teamcode.subsystems.ColorSensors.BallColor;
 import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.subsystems.Vision;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
@@ -46,10 +47,10 @@ public class TeleOpDECODE extends BaseOpMode {
     private String lastAutoAimMessage = "";
 
     // Color sensor state for telemetry
-    private ColorSensors.BallColor frontLeftLaneColor = ColorSensors.BallColor.NONE;
-    private ColorSensors.BallColor frontRightLaneColor = ColorSensors.BallColor.NONE;
-    private ColorSensors.BallColor backLeftLaneColor = ColorSensors.BallColor.NONE;
-    private ColorSensors.BallColor backRightLaneColor = ColorSensors.BallColor.NONE;
+    private BallColor frontLeftLaneColor = BallColor.NONE;
+    private BallColor frontRightLaneColor = BallColor.NONE;
+    private BallColor backLeftLaneColor = ColorSensors.BallColor.NONE;
+    private BallColor backRightLaneColor = ColorSensors.BallColor.NONE;
 
 
     // ==================== BUTTON STATE TRACKING ====================
@@ -98,6 +99,7 @@ public class TeleOpDECODE extends BaseOpMode {
         handleShooterControls();        // GP1 shooter (MOVED FROM GP2!)
         handleIntakeControls();         // GP2 intake toggle
         handleBallFeedControls();       // GP2 independent L/R feed
+        handleEndgameControls();
         handleColorSensorDisplay();     // Automatic color detection
         handleEmergencyStop();          // GP1+GP2 B button
 
@@ -386,6 +388,18 @@ public class TeleOpDECODE extends BaseOpMode {
             //TODO Change function to take into account both color sensors on each side
             led.showLeftLaneColor(backLeftLaneColor);
             led.showRightLaneColor(backRightLaneColor);
+        }
+    }
+
+    // ==================== GP1: ENDGAME SYSTEM ====================
+
+    private void handleEndgameControls(){
+        if(gamepad1.right_trigger > 0.75 && gamepad1.left_trigger > 0.75){
+            // Run both functions; the correct one will set the motor speeds inside the endgame system
+            endgame.runEndgameFunction();
+        } else if(gamepad1.right_bumper){
+            endgame.reverseEndgameFunction();
+        } else{
         }
     }
 
