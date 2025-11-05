@@ -29,7 +29,7 @@ public class Constants {
     //  (for Pedro Pathing Tuning OpMode, provides the 2nd parameter for createFollower()
     //////////////////////////////////  \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 // =======================TODO: CHANGE THIS WHEN PUSHING CODE========================= //
-    private static final MainCharacter TUNING_ROBOT = MainCharacter.ROBOT_11846;  // TEST_BOT, ROBOT_11846, ROBOT_22154
+    private static final MainCharacter TUNING_ROBOT = MainCharacter.ROBOT_22154;  // TEST_BOT, ROBOT_11846, ROBOT_22154
 // =========================DID YOU CHANGE IT?!===============================
 ///  \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\  //////////////////////////////////////
 
@@ -86,7 +86,7 @@ public class Constants {
             .mass(15.88)
             .forwardZeroPowerAcceleration(-50.943)
             .lateralZeroPowerAcceleration(-63.789)
-            .useSecondaryHeadingPIDF(true)
+            //.useSecondaryHeadingPIDF(true)
             .translationalPIDFCoefficients(new PIDFCoefficients(0.375, 0, 0.025, 0));
 
     private static MecanumConstants robot22154DriveConstants = new MecanumConstants()

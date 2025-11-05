@@ -49,8 +49,8 @@ public class TeleOpDECODE extends BaseOpMode {
     // Color sensor state for telemetry
     private BallColor frontLeftLaneColor = BallColor.NONE;
     private BallColor frontRightLaneColor = BallColor.NONE;
-    private BallColor backLeftLaneColor = ColorSensors.BallColor.NONE;
-    private BallColor backRightLaneColor = ColorSensors.BallColor.NONE;
+    private BallColor backLeftLaneColor = BallColor.NONE;
+    private BallColor backRightLaneColor = BallColor.NONE;
 
 
     // ==================== BUTTON STATE TRACKING ====================
@@ -93,6 +93,7 @@ public class TeleOpDECODE extends BaseOpMode {
         // Update subsystems
         shooter.periodic();
         ballFeed.periodic();
+        colorSensors.periodic();
 
         // Handle all controls
         handleDriveControls();          // GP1 drive + rotation
@@ -386,8 +387,8 @@ public class TeleOpDECODE extends BaseOpMode {
         // Update LEDs automatically if robot has them
         if (led != null) {
             //TODO Change function to take into account both color sensors on each side
-            led.showLeftLaneColor(backLeftLaneColor);
-            led.showRightLaneColor(backRightLaneColor);
+            led.showLeftLaneColor(frontLeftLaneColor, backLeftLaneColor);
+            led.showRightLaneColor(frontRightLaneColor, backRightLaneColor);
         }
     }
 
@@ -505,10 +506,19 @@ public class TeleOpDECODE extends BaseOpMode {
         // === BALL DETECTION ===
         if (colorSensors != null) {
             telemetryM.debug("=== BALL DETECTION ===");
-            telemetryM.debug("Front Left Lane: " + frontLeftLaneColor);
-            telemetryM.debug("Front Right Lane: " + frontRightLaneColor);
-            telemetryM.debug("Back Left Lane: " + backLeftLaneColor);
-            telemetryM.debug("Back Right Lane: " + backRightLaneColor);
+            telemetryM.debug("Front Left Lane Color: " + ColorSensors.flBallColor);
+            telemetryM.debug("Front Right Lane Color: " + frontRightLaneColor);
+            telemetryM.debug("Back Left Lane Color: " + backLeftLaneColor);
+            telemetryM.debug("Back Right Lane Color: " + backRightLaneColor);
+            telemetryM.debug("");
+            telemetryM.debug("Front Left Raw R Color: " + ColorSensors.flRGBValueR);
+            telemetryM.debug("Front Left Raw G Color: " + ColorSensors.flRGBValueG);
+            telemetryM.debug("Front Left Raw B Color: " + ColorSensors.flRGBValueB);
+            telemetryM.debug("Front Right Raw Color: " + ColorSensors.frRGBValue);
+            telemetryM.debug("Back Left Raw Color: " + ColorSensors.blRGBValue);
+            telemetryM.debug("Back Right Raw Color: " + ColorSensors.brRGBValue);
+            telemetryM.debug("");
+            telemetryM.debug("Ball Count: " + ColorSensors.ballCount);
             telemetryM.debug("");
         }
 

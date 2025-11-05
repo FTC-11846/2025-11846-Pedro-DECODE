@@ -5,6 +5,7 @@ import com.bylazar.configurables.annotations.IgnoreConfigurable;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 
+import org.firstinspires.ftc.teamcode.subsystems.ColorSensors.BallColor;
 import org.firstinspires.ftc.teamcode.robots.CharacterStats;
 
 /**
@@ -23,7 +24,7 @@ public class LED {
     public static class LEDColors {
         // GoBilda RGB LED PWM positions
         // See: https://www.gobilda.com/rgb-indicator-light-pwm-controlled/
-        public double GREEN = 0.444;
+        public double GREEN = 0.5;
         public double PURPLE = 0.722;
         public double RED = 0.167;
         public double BLUE = 0.611;
@@ -121,34 +122,61 @@ public class LED {
     /**
      * Show detected ball color in left lane
      */
-    public void showLeftLaneColor(ColorSensors.BallColor color) {
-        switch (color) {
-            case PURPLE:
-                servoL.setPosition(ledColors.PURPLE);
-                break;
-            case GREEN:
-                servoL.setPosition(ledColors.GREEN);
-                break;
-            case NONE:
-                servoL.setPosition(ledColors.OFF);
-                break;
+    public void showLeftLaneColor(BallColor frontColor, BallColor backColor) {
+        if (ColorSensors.ballCount >= 3){
+            servoL.setPosition(ledColors.YELLOW);
+        } else {
+            //Prioritize back color because that will be the ball fired first
+            switch (backColor) {
+                case PURPLE:
+                    servoL.setPosition(ledColors.PURPLE);
+                    break;
+                case GREEN:
+                    servoL.setPosition(ledColors.GREEN);
+                    break;
+                case NONE:
+                    switch (frontColor) {
+                        case PURPLE:
+                            servoL.setPosition(ledColors.PURPLE);
+                            break;
+                        case GREEN:
+                            servoL.setPosition(ledColors.GREEN);
+                            break;
+                        case NONE:
+                            servoL.setPosition(ledColors.OFF);
+                            break;
+                    }
+            }
         }
     }
     
     /**
      * Show detected ball color in right lane
      */
-    public void showRightLaneColor(ColorSensors.BallColor color) {
-        switch (color) {
-            case PURPLE:
-                servoR.setPosition(ledColors.PURPLE);
-                break;
-            case GREEN:
-                servoR.setPosition(ledColors.GREEN);
-                break;
-            case NONE:
-                servoR.setPosition(ledColors.OFF);
-                break;
+    public void showRightLaneColor(BallColor frontColor, BallColor backColor) {
+        if(ColorSensors.ballCount >= 3){
+            servoR.setPosition(ledColors.YELLOW);
+        } else {
+            switch (backColor) {
+                case PURPLE:
+                    servoR.setPosition(ledColors.PURPLE);
+                    break;
+                case GREEN:
+                    servoR.setPosition(ledColors.GREEN);
+                    break;
+                case NONE:
+                    switch (frontColor) {
+                        case PURPLE:
+                            servoR.setPosition(ledColors.PURPLE);
+                            break;
+                        case GREEN:
+                            servoR.setPosition(ledColors.GREEN);
+                            break;
+                        case NONE:
+                            servoR.setPosition(ledColors.OFF);
+                            break;
+                    }
+            }
         }
     }
     

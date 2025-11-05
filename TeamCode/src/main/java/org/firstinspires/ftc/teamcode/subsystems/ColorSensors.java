@@ -24,19 +24,19 @@ public class ColorSensors {
     // ==================== NESTED CONFIG CLASS ====================
     
     public static class ColorThresholds {
-        // HSV hue thresholds (0-360 degrees)
-        public double redHueMin = 0.0;
-        public double redHueMax = 360.0;
-        public double blueHueMin = 0.0;
-        public double blueHueMax = 360.0;
-        public double yellowHueMin = 0.0;
-        public double yellowHueMax = 360.0;
+        //
+//        public double redHueMin = 0.0;
+//        public double redHueMax = 360.0;
+//        public double blueHueMin = 0.0;
+//        public double blueHueMax = 360.0;
+//        public double yellowHueMin = 0.0;
+//        public double yellowHueMax = 360.0;
         
-        // Minimum saturation to consider color valid (0-1)
-        public double minSaturation = 0.3;
-        
-        // Minimum value/brightness to consider color valid (0-1)
-        public double minValue = 0.2;
+//        // Minimum saturation to consider color valid (0-1)
+//        public double minSaturation = 0.3;
+//
+//        // Minimum value/brightness to consider color valid (0-1)
+//        public double minValue = 0.2;
     }
     
     // ==================== ENUMS ====================
@@ -63,7 +63,41 @@ public class ColorSensors {
 
     @IgnoreConfigurable
     private final NormalizedColorSensor backRightSensor;
-    
+
+    @IgnoreConfigurable
+    public static float flRGBValueR;
+
+    @IgnoreConfigurable
+    public static float flRGBValueG;
+
+    @IgnoreConfigurable
+    public static float flRGBValueB;
+
+    @IgnoreConfigurable
+    public static BallColor flBallColor;
+
+    @IgnoreConfigurable
+    public static BallColor frBallColor;
+
+    @IgnoreConfigurable
+    public static BallColor blBallColor;
+
+    @IgnoreConfigurable
+    public static BallColor brBallColor;
+
+    @IgnoreConfigurable
+    public static int ballCount;
+
+    @IgnoreConfigurable
+    public static int frRGBValue;
+
+    @IgnoreConfigurable
+    public static int blRGBValue;
+
+    @IgnoreConfigurable
+    public static int brRGBValue;
+
+
     // ==================== CONSTRUCTOR ====================
     
     /**
@@ -87,6 +121,18 @@ public class ColorSensors {
         frontRightSensor = hardwareMap.get(NormalizedColorSensor.class, stats.getFrontRightLaneColorSensorName());
         backLeftSensor = hardwareMap.get(NormalizedColorSensor.class, stats.getBackLeftLaneColorSensorName());
         backRightSensor = hardwareMap.get(NormalizedColorSensor.class, stats.getBackRightLaneColorSensorName());
+
+        flRGBValueR = 0;
+        flRGBValueG = 0;
+        flRGBValueB = 0;
+        flBallColor = BallColor.NONE;
+        frRGBValue = 0;
+        frBallColor = BallColor.NONE;
+        blRGBValue = 0;
+        blBallColor = BallColor.NONE;
+        brRGBValue = 0;
+        brBallColor = BallColor.NONE;
+        ballCount = 0;
     }
     
     // ==================== PUBLIC DETECTION METHODS ====================
@@ -190,28 +236,27 @@ public class ColorSensors {
      */
     private BallColor detectColor(NormalizedColorSensor sensor) {
         NormalizedRGBA colors = sensor.getNormalizedColors();
-        float[] hsv = rgbaToHSV(colors);
-        
-        float hue = hsv[0];         // 0-360
-        float saturation = hsv[1];  // 0-1
-        float value = hsv[2];       // 0-1
-        
-        // Check if color is valid (not too dark or too washed out)
-        if (saturation < colorThresholds.minSaturation || value < colorThresholds.minValue) {
-            return BallColor.NONE;
-        }
+        float red = colors.red;
+        float green = colors.green;
+        float blue = colors.blue;
         
         // Check hue ranges
         //TODO FIX THIS USING ACTUAL COLOR THRESHOLDS FOR THE BALLS
-        if (isInRange(hue, colorThresholds.redHueMin, colorThresholds.redHueMax)) {
+        if ((blue > (1.5 * red) && green < (red * 1.5))){
             return BallColor.PURPLE;
-        } else if (isInRange(hue, colorThresholds.blueHueMin, colorThresholds.blueHueMax)) {
+        } else if ((blue > (red * 1.75) && green > (red * 1.8))) {
             return BallColor.GREEN;
-        } else if (isInRange(hue, colorThresholds.yellowHueMin, colorThresholds.yellowHueMax)) {
+        } else {
             return BallColor.NONE;
         }
-        
-        return BallColor.NONE;
+    }
+
+    private int getBallCount(){
+        int flBall = flBallColor == BallColor.NONE ? 0 : 1;
+        int frBall = frBallColor == BallColor.NONE ? 0 : 1;
+        int blBall = blBallColor == BallColor.NONE ? 0 : 1;
+        int brBall = brBallColor == BallColor.NONE ? 0 : 1;
+        return flBall + frBall + blBall + brBall;
     }
     
     /**
@@ -239,5 +284,19 @@ public class ColorSensors {
             return value >= min || value <= max;
         }
         return value >= min && value <= max;
+    }
+
+    public void periodic(){
+        flRGBValueR = frontLeftSensor.getNormalizedColors().red * 255;
+        flRGBValueG = frontLeftSensor.getNormalizedColors().green * 255;
+        flRGBValueB = frontLeftSensor.getNormalizedColors().blue * 255;
+        flBallColor = detectColor(frontLeftSensor);
+        frRGBValue = frontRightSensor.getNormalizedColors().toColor();
+        frBallColor = detectColor(frontRightSensor);
+        blRGBValue = backLeftSensor.getNormalizedColors().toColor();
+        blBallColor = detectColor(backLeftSensor);
+        brRGBValue = backRightSensor.getNormalizedColors().toColor();
+        brBallColor = detectColor(backRightSensor);
+        ballCount = getBallCount();
     }
 }
