@@ -6,6 +6,7 @@
     import com.bylazar.telemetry.TelemetryManager;
     import com.pedropathing.follower.Follower;
     import com.pedropathing.geometry.Pose;
+    import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
     import com.qualcomm.robotcore.eventloop.opmode.OpMode;
     import com.qualcomm.robotcore.hardware.IMU;
     import com.qualcomm.robotcore.util.ElapsedTime;
@@ -165,6 +166,11 @@
                 // Normal init - IMU will be initialized when robot selected
                 telemetryM.debug("=== INITIALIZATION ===");
                 telemetryM.debug("Waiting for robot selection...");
+
+                GoBildaPinpointDriver pinpoint = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
+                pinpoint.resetPosAndIMU();
+                // No sleep needed - calibration happens during init_loop phase
+
             }
 
             // Child class can override for additional init
@@ -207,27 +213,6 @@
             follower = Constants.createFollower(hardwareMap, character);
 
             Pose startPose = actualStartingPose;  // That's it! It's always set by this point
-            follower.setPose(startPose);
-//            // ✅ FIX #4: Better pose initialization logic
-//            Pose startPose;
-//            if (RobotState.hasState() && RobotState.lastKnownPose != null) {
-//                // Coming from Auto - use saved pose
-//                startPose = savedPoseFromAuto;
-//                RobotState.clearState();  // Clear after use
-//                telemetryM.debug("Using saved pose from Auto");
-//            } else if (startPoseInSelectMenu != null) {
-//                // Normal start - use selected position
-//                startPose = getStartingPose();
-//                telemetryM.debug("Using selected starting position");
-//            } else {
-//                // ERROR: No pose available!
-//                telemetryM.debug("ERROR: No starting pose available!");
-//                telemetryM.debug("Position was not selected!");
-//                telemetryM.update(telemetry);
-//                requestOpModeStop();
-//                return;
-//            }
-
             follower.setPose(startPose);
 
             // Log the pose for debugging
@@ -612,14 +597,14 @@
                 return new Pose(
                         Vision.goalPositions.blueGoalX,
                         Vision.goalPositions.blueGoalY,
-                        Math.toRadians(180)
+                        Math.toRadians(135)
                 );
             } else if (tagId == Vision.tagIds.redGoalTagId) {
                 // Red goal on left side of field, facing right (0°)
                 return new Pose(
                         Vision.goalPositions.redGoalX,
                         Vision.goalPositions.redGoalY,
-                        Math.toRadians(0)
+                        Math.toRadians(45)
                 );
             }
             return null;

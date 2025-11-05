@@ -8,6 +8,7 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.subsystems.Vision;
+import org.firstinspires.ftc.teamcode.util.FieldMirror;
 import org.firstinspires.ftc.teamcode.util.RobotState;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 
@@ -48,8 +49,9 @@ public class Auto3BallPark extends BaseOpMode {
         public static double SHOOT_X = 72.0;  // Mid-field (field center)
         public static double SHOOT_Y_NEAR = 30.0;  // Near audience side
         public static double SHOOT_Y_FAR = 114.0;  // Far side
-        public static double SHOOT_HEADING_DEG = 125.0;  // Face blue wall (toward goal)
-        
+        public static double SHOOT_HEADING_NEAR = 125.0;  // Face blue wall (toward goal)
+        public static double SHOOT_HEADING_FAR = 145.0;  // Face blue wall (toward goal)
+
         // Park position (BLUE coordinates - observation zone)
         public static double PARK_X = 100.0;  // Closer to red wall
         public static double PARK_Y_NEAR = 40.0;
@@ -221,37 +223,38 @@ public class Auto3BallPark extends BaseOpMode {
         // Determine positions based on NEAR vs FAR
         double shootY = startPoseInSelectMenu.toString().contains("Near") ?
             AutoConstants.SHOOT_Y_NEAR : AutoConstants.SHOOT_Y_FAR;
+        double shootHeading = Math.toRadians(startPoseInSelectMenu.toString().contains("Near") ?
+            AutoConstants.SHOOT_HEADING_NEAR : AutoConstants.SHOOT_HEADING_FAR);
         double parkY = startPoseInSelectMenu.toString().contains("Near") ?
             AutoConstants.PARK_Y_NEAR : AutoConstants.PARK_Y_FAR;
         
-        // Build path to shooting position (PEDRO COORDINATES)
+        // Build path to shooting position (PEDRO COORDINATES), then mirror
         Pose shootPose = new Pose(
             AutoConstants.SHOOT_X, 
             shootY,
-            Math.toRadians(AutoConstants.SHOOT_HEADING_DEG)
-        );
-        
+            shootHeading
+        );  shootPose = FieldMirror.mirrorPose(shootPose, alliance);  /// NOTE: only mirrors if red
+
+        // Build path using the mirrored pose
         pathToShoot = follower.pathBuilder()
-            .addPath(new BezierLine(startPose, shootPose))
+            .addPath(new BezierLine(
+                    startPose,  // already mirrored from getStartingPose()
+                    shootPose))
             .setLinearHeadingInterpolation(
-                startPose.getHeading(),
-                Math.toRadians(AutoConstants.SHOOT_HEADING_DEG)
-            )
+                    startPose.getHeading(),
+                    shootPose.getHeading())  // Extract from stored Pose
             .build();
         
         // Build path to park position (PEDRO COORDINATES)
         Pose parkPose = new Pose(
             AutoConstants.PARK_X,
             parkY,
-            Math.toRadians(AutoConstants.PARK_HEADING_DEG)
-        );
+            shootHeading
+        );  parkPose = FieldMirror.mirrorPose(parkPose, alliance);
         
-        pathToPark = follower.pathBuilder()
+        pathToPark = follower.pathBuilder()     /// Exact same pattern as pathToShoot, just condensed
             .addPath(new BezierLine(shootPose, parkPose))
-            .setLinearHeadingInterpolation(
-                Math.toRadians(AutoConstants.SHOOT_HEADING_DEG),
-                Math.toRadians(AutoConstants.PARK_HEADING_DEG)
-            )
+            .setLinearHeadingInterpolation(shootPose.getHeading(), parkPose.getHeading())
             .build();
     }
     

@@ -55,7 +55,7 @@ public class Constants {
             .mass(9.53)   // kg - Must be updated after weighing (kg = Lbs / 2.2046)
             .forwardZeroPowerAcceleration(-50.943) // in/s^2
             .lateralZeroPowerAcceleration(-63.789) // in/s^2
-            .useSecondaryHeadingPIDF(true)
+//            .useSecondaryHeadingPIDF(true)
             .translationalPIDFCoefficients(new PIDFCoefficients(0.375, 0, 0.025, 0));
 
     private static MecanumConstants testBotDriveConstants = new MecanumConstants()
@@ -73,7 +73,7 @@ public class Constants {
 
     private static PinpointConstants testBotLocalizerConstants = new PinpointConstants()
             .forwardPodY(3) // inches
-            .strafePodX(6) // inches
+            .strafePodX(-6.4) // inches
             .distanceUnit(DistanceUnit.INCH)
             .hardwareMapName("pinpoint")
             .encoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD)
@@ -117,7 +117,7 @@ public class Constants {
             .mass(12.70)
             .forwardZeroPowerAcceleration(-50.943)
             .lateralZeroPowerAcceleration(-63.789)
-            .useSecondaryHeadingPIDF(true)
+//            .useSecondaryHeadingPIDF(true)
             .translationalPIDFCoefficients(new PIDFCoefficients(0.375, 0, 0.025, 0));
 
     private static MecanumConstants robot11846DriveConstants = new MecanumConstants()
