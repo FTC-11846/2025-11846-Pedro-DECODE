@@ -6,6 +6,7 @@ import android.annotation.SuppressLint;
 
 import com.bylazar.configurables.PanelsConfigurables;
 import com.pedropathing.geometry.Pose;
+import com.pedropathing.paths.PathChain;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
@@ -52,6 +53,17 @@ public class TeleOpDECODE extends BaseOpMode {
     private BallColor backLeftLaneColor = BallColor.NONE;
     private BallColor backRightLaneColor = BallColor.NONE;
 
+    // ==================== POSES FOR TELEOP ====================
+
+    private Pose redIntakePose = new Pose(18,9,180);
+    private Pose blueIntakePose = new Pose(126,9,0);
+    private Pose nearLoadingZoneShootPose = new Pose(72, 24, 62);
+    private Pose nearGoalShootPose = new Pose(72, 72, 51);
+
+    public PathChain pathToRedIntake;
+    public PathChain pathToBlueIntake;
+    public PathChain pathToNearLoadingZoneShoot;
+    public PathChain pathToNearGoalShoot;
 
     // ==================== BUTTON STATE TRACKING ====================
 
@@ -398,8 +410,8 @@ public class TeleOpDECODE extends BaseOpMode {
         if(gamepad1.right_trigger > 0.75 && gamepad1.left_trigger > 0.75){
             // Run both functions; the correct one will set the motor speeds inside the endgame system
             endgame.runEndgameFunction();
-        } else if(gamepad1.right_bumper){
-            endgame.reverseEndgameFunction();
+        //} else if(gamepad1.right_bumper){
+        //    endgame.reverseEndgameFunction();
         } else{
         }
     }

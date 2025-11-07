@@ -104,7 +104,7 @@ public class Constants {
 
     private static PinpointConstants robot22154LocalizerConstants = new PinpointConstants()
             .forwardPodY(3)
-            .strafePodX(7)
+            .strafePodX(-7.5)
             .distanceUnit(DistanceUnit.INCH)
             .hardwareMapName("pinpoint")
             .encoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD)
