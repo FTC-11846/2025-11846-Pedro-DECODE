@@ -1,8 +1,5 @@
 package org.firstinspires.ftc.teamcode.robots;
 
-import com.bylazar.configurables.annotations.Configurable;
-import com.pedropathing.geometry.Pose;
-
 /**
  * Robot22154Abilities - Configuration for competition robot 22154
  * Features: Dual shooters, dual-independent ball feed, dual-independent intake, color sensors, LEDs, lifters
@@ -17,7 +14,7 @@ public class Robot22154Abilities extends CharacterStats {
         public static double HIGH_VELOCITY_RPM = 4000;
         public static double LOW_VELOCITY_RPM = 1500;
         public static double BASELINE_POWER = 2000.0;
-        public static double PIDF_P = 20.0;
+        public static double PIDF_P = 10.0;
     }
     
     public static class BallFeedConstants {
@@ -29,9 +26,12 @@ public class Robot22154Abilities extends CharacterStats {
     }
     
     public static class VisionConstants {
-        public static double CAMERA_FORWARD_OFFSET = 6.5;  // TODO: Measure actual offset!
-        public static double CAMERA_RIGHT_OFFSET = 2.5;
-        public static double CAMERA_HEADING_OFFSET = 0.0;
+        public static double CAMERA_FORWARD_OFFSET = -7;  /// FTC SDK uses X, Y, Z offsets, Confirm what X & Y means!
+        public static double CAMERA_RIGHT_OFFSET = 0;
+        public static double CAMERA_Z_OFFSET = 13.5; // TODO: Add these new constants to all robots.classes!
+        public static double CAMERA_PITCH = 10.6;  // TODO: Switch from our own 2-param estimation to full FTC SDK pose estimation!
+        public static double CAMERA_ROLL = 0;
+        public static double CAMERA_YAW = 0.0;
     }
 
     // ==================== CONFIGURATION APPLICATION ====================
@@ -56,7 +56,7 @@ public class Robot22154Abilities extends CharacterStats {
         // Vision/Camera offset
         visionConfig.cameraForwardOffset = VisionConstants.CAMERA_FORWARD_OFFSET;
         visionConfig.cameraRightOffset = VisionConstants.CAMERA_RIGHT_OFFSET;
-        visionConfig.cameraHeadingOffset = VisionConstants.CAMERA_HEADING_OFFSET;
+        visionConfig.cameraHeadingOffset = VisionConstants.CAMERA_YAW;
 
         // IMU config
         imuConfig.logoFacingDirection = "UP";

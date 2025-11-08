@@ -49,11 +49,11 @@ public class Auto3BallPark extends BaseOpMode {
         public static double SHOOT_X = 72.0;  // Mid-field (field center)
         public static double SHOOT_Y_NEAR = 30.0;  // Near audience side
         public static double SHOOT_Y_FAR = 114.0;  // Far side
-        public static double SHOOT_HEADING_NEAR = 125.0;  // Face blue wall (toward goal)
-        public static double SHOOT_HEADING_FAR = 145.0;  // Face blue wall (toward goal)
+        public static double SHOOT_HEADING_NEAR = 115.0;  // Face blue wall (toward goal)
+        public static double SHOOT_HEADING_FAR = 155.0;  // Face blue wall (toward goal)
 
         // Park position (BLUE coordinates - observation zone)
-        public static double PARK_X = 100.0;  // Closer to red wall
+        public static double PARK_X = 44.0;  // Closer to red wall
         public static double PARK_Y_NEAR = 40.0;
         public static double PARK_Y_FAR = 80.0;
         public static double PARK_HEADING_DEG = 270.0;  // Face audience
@@ -70,7 +70,7 @@ public class Auto3BallPark extends BaseOpMode {
         // Future: Could add logic to move closer if too far
         
         // Shooter velocity error tolerance (RPM)
-        public static double VELOCITY_TOLERANCE = 150.0;  // Increased from 100
+        public static double VELOCITY_TOLERANCE = 100.0;  // Increased from 100
         
         // Stuck detection
         public static double MIN_PROGRESS_DISTANCE = 3.0;  // inches per check interval
@@ -80,7 +80,8 @@ public class Auto3BallPark extends BaseOpMode {
     // ==================== STATE MACHINE ====================
     
     private enum AutoState {
-        MOVE_TO_SHOOT,      // Drive to shooting position
+        MOVE_TO_SHOOT,     // Drive to shooting position
+        HOLD_POS,
         AUTO_AIM,           // Aim at goal using vision
         SHOOT,              // Fire ball
         MOVE_TO_PARK,       // Drive to park position
@@ -193,6 +194,9 @@ public class Auto3BallPark extends BaseOpMode {
             case MOVE_TO_SHOOT:
                 handleMoveToShoot();
                 break;
+            case HOLD_POS:
+                handleHoldPos();
+                break;
             case AUTO_AIM:
                 handleAutoAim();
                 break;
@@ -263,6 +267,14 @@ public class Auto3BallPark extends BaseOpMode {
     private void handleMoveToShoot() {
         if (!follower.isBusy()) {
             // Reached shooting position
+            currentState = AutoState.HOLD_POS;
+            stateTimer.reset();
+        }
+    }
+
+    private void handleHoldPos() {
+        if (stateTimer.seconds() > 2){
+            follower.followPath(pathToShoot, false);
             currentState = AutoState.AUTO_AIM;
             stateTimer.reset();
         }
@@ -308,25 +320,31 @@ public class Auto3BallPark extends BaseOpMode {
     }
     
     private void handleShoot() {
+
+        intake.startIntakeOne();
+        intake.startIntakeTwo();
+
         // Wait for shooter to reach velocity
         double velocityError = Math.abs(
             shooter.getTargetVelocityRPM() - shooter.getActualVelocityRPM()
         );
-        if (velocityError < AutoConstants.VELOCITY_TOLERANCE || stateTimer.seconds() > 1.5) {
+        if (velocityError < AutoConstants.VELOCITY_TOLERANCE || stateTimer.seconds() > 3) {
             // Shooter ready (or timeout) - feed ball
-            if(shotTimer.seconds() > 1){
+            if (shotTimer.seconds() > 0.6 && shotTimer.seconds() < 0.8) {
+                ballFeed.feedLeftAuto(true);
+                ballFeed.feedRightAuto(true);
+            } else if(shotTimer.seconds() > 1){
                 //Sufficient time between shots
                 if (!ballFeed.isLeftFeeding() && !firstShotFired) {
-                    ballFeed.feedLeft();
+                    ballFeed.feedLeftAuto(false);
                     firstShotFired = true;
                     shotTimer.reset();
                 } else if(!ballFeed.isRightFeeding() && firstShotFired){
-                    ballFeed.feedRight();
+                    ballFeed.feedRightAuto(false);
                     secondShotFired = true;
                     shotTimer.reset();
                 } else if(secondShotFired){
-                    intake.startIntakeOne();
-                    intake.startIntakeTwo();
+                    ballFeed.feedLeftAuto(false);
                     thridShotFired = true;
                     shotTimer.reset();
                 }

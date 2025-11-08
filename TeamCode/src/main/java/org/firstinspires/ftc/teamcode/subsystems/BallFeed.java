@@ -47,7 +47,8 @@ public class BallFeed {
         FEEDING,    // CRServo: forward motion / Servo: lowering gate
         HOLDING,    // Servo only: gate down, waiting for ball to pass
         REVERSING,  // CRServo: reversing to prevent double-feed
-        RETURNING   // Servo only: raising gate back to idle position
+        RETURNING, // Servo only: raising gate back to idle position
+        FEEDINGAUTO
     }
 
     // ==================== SUBSYSTEM FIELDS ====================
@@ -156,6 +157,17 @@ public class BallFeed {
         updateLeftMotor();
     }
 
+    public void feedLeftAuto(boolean stop){
+        if (motorL instanceof CRServo){
+            if(stop){
+                leftState = FeedState.IDLE;
+            } else {
+                leftState = FeedState.FEEDINGAUTO;
+                updateLeftMotor();
+            }
+        }
+    }
+
     /**
      * Feed right lane (trigger by GP2 RT)
      * Starts state machine: FEEDING → (HOLDING) → REVERSING/RETURNING → IDLE
@@ -167,6 +179,18 @@ public class BallFeed {
         rightState = FeedState.FEEDING;
         rightTimer.reset();
         updateRightMotor();
+    }
+
+    public void feedRightAuto(boolean stop){
+        if (motorR instanceof CRServo){
+            if(stop){
+                rightState = FeedState.IDLE;
+                updateRightMotor();
+            } else {
+                rightState = FeedState.FEEDINGAUTO;
+                updateRightMotor();
+            }
+        }
     }
 
     /**
@@ -247,6 +271,9 @@ public class BallFeed {
                 }
                 break;
 
+            case FEEDINGAUTO:
+                break;
+
             case HOLDING:
                 // Servo gate: Hold down for ball to pass through
                 if (leftTimer.seconds() >= holdDuration) {
@@ -288,6 +315,9 @@ public class BallFeed {
                     }
                     updateRightMotor();
                 }
+                break;
+
+            case FEEDINGAUTO:
                 break;
 
             case HOLDING:
@@ -355,6 +385,7 @@ public class BallFeed {
     private double calculateCRServoPower(FeedState state) {
         switch (state) {
             case FEEDING:
+            case FEEDINGAUTO:
                 return feedingControl.feedPower;
             case REVERSING:
                 return feedingControl.reversePower;

@@ -33,7 +33,7 @@ public class Shooter {
     
     public static class AutoAim {
         public double linearCorrectionFactor = 24.0;
-        public double headingPGain = 0.01;
+        public double headingPGain = 0.02;
         public double maxTrackingRotation = 0.3;
         public double headingDeadbandDeg = 2.0;
         public double singleShotDuration = 120.0;

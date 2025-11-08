@@ -48,10 +48,10 @@ public enum StartingPosition {
         switch (this) {
             case NEAR:
                 // Blue near position: audience side, facing toward far side
-                return new Pose(86, 8, Math.toRadians(90));
+                return new Pose(56, 8, Math.toRadians(90));
             case FAR:
                 // Blue far position: far side, facing toward audience
-                return new Pose(86, 136, Math.toRadians(270));
+                return new Pose(15, 112, Math.toRadians(0));
             default:
                 throw new IllegalStateException("Unknown starting position: " + this);
         }

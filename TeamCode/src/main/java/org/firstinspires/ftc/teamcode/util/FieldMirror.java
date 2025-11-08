@@ -11,7 +11,7 @@ import com.pedropathing.geometry.Pose;
  * Field coordinate system:
  * - X: 0 = blue wall, 144 = red wall
  * - Y: 0 = audience side, 144 = far side
- * - Heading: 0° = facing audience, 90° = facing far side
+ * - Heading: -90° = facing audience, 0° = facing blue drive teams, 90° = facing goals, +/-180° = facing red drive teams
  */
 public class FieldMirror {
 
@@ -34,9 +34,7 @@ public class FieldMirror {
     // Field dimensions (inches)
     private static final double FIELD_WIDTH = 144.0;
     
-    /**
-     * Mirror a pose from BLUE alliance to RED alliance (or vice versa)
-     * Returns the pose unchanged if alliance is BLUE
+    /**Zed if alliance is BLUE
      * 
      * @param bluePose Pose in BLUE alliance coordinates
      * @param alliance Target alliance (RED or BLUE)
