@@ -105,7 +105,7 @@ public class TeleOpDECODE extends BaseOpMode {
         // Update subsystems
         shooter.periodic();
         ballFeed.periodic();
-        colorSensors.periodic();
+        if (colorSensors != null){ colorSensors.periodic(); }
 
         // Handle all controls
         handleDriveControls();          // GP1 drive + rotation
@@ -349,6 +349,10 @@ public class TeleOpDECODE extends BaseOpMode {
         // Use falling edge detection (button release) to prevent double-toggle
         if (!gamepad2.dpad_up && gp2_dpadUpLast) {
             intake.toggleIntakeOne();
+            /// Currently 11846 wants new bottom intake control fused with One
+            if (intake.getMode() == CharacterStats.IntakeMode.DUAL_STAGE_SERVO_BOTTOM) {
+                intake.toggleIntakeTwo();
+            }
         }
         gp2_dpadUpLast = gamepad2.dpad_up;
 
@@ -505,6 +509,8 @@ public class TeleOpDECODE extends BaseOpMode {
             telemetryM.debug("Front/One: " + (intake.isIntakeOneRunning() ? "ON" : "OFF"));
             if (intake.getMode() == CharacterStats.IntakeMode.DUAL_INDEPENDENT_TOGGLE) {
                 telemetryM.debug("Back/Two: " + (intake.isIntakeTwoRunning() ? "ON" : "OFF"));
+            } else if (intake.getMode() == CharacterStats.IntakeMode.DUAL_STAGE_SERVO_BOTTOM) {
+                telemetryM.debug("Bottom/Two: " + (intake.isIntakeTwoRunning() ? "ON" : "OFF"));
             }
             telemetryM.debug("");
         }

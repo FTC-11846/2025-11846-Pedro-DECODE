@@ -43,7 +43,10 @@ public class Intake {
     
     @IgnoreConfigurable
     private Object intakeTwo;   // CRServo or null
-    
+
+    @IgnoreConfigurable
+    private CRServo intakeTwoRight;  // Only for DUAL_STAGE_SERVO_BOTTOM mode
+
     @IgnoreConfigurable
     private boolean intakeOneState = false;
     
@@ -55,10 +58,10 @@ public class Intake {
     /**
      * Create Intake using MainCharacter enum (backward compatible)
      */
-    public Intake(HardwareMap hardwareMap, MainCharacter character) {
-        this(hardwareMap, character.getAbilities());
-    }
-    
+//    public Intake(HardwareMap hardwareMap, MainCharacter character) {     Deprecated, verify it still works then delete, Nov 9...
+//        this(hardwareMap, character.getAbilities());
+//    }
+//
     /**
      * Create Intake using CharacterStats directly (preferred)
      */
@@ -71,6 +74,7 @@ public class Intake {
             case NONE:
                 intakeOne = null;
                 intakeTwo = null;
+                intakeTwoRight = null;
                 break;
             
             case SINGLE_TOGGLE:
@@ -84,6 +88,7 @@ public class Intake {
                 }
                 ((DcMotorEx) intakeOne).setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
                 intakeTwo = null;
+                intakeTwoRight = null;
                 break;
             
             case DUAL_INDEPENDENT_TOGGLE:
@@ -92,8 +97,24 @@ public class Intake {
                 intakeTwo = hardwareMap.get(CRServo.class, stats.getIntakeTwoMotorName());
                 ((CRServo) intakeOne).setDirection(DcMotorSimple.Direction.FORWARD);
                 ((CRServo) intakeTwo).setDirection(DcMotorSimple.Direction.FORWARD);
+                intakeTwoRight = null;
                 break;
-            
+
+            case DUAL_STAGE_SERVO_BOTTOM:
+                // 11846: Motor top + paired servos bottom
+                intakeOne = hardwareMap.get(DcMotorEx.class, stats.getIntakeOneMotorName());
+                ((DcMotorEx) intakeOne).setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
+                // Init both servos from base name + L/R suffix
+                String baseName = stats.getIntakeTwoMotorName();
+                intakeTwo = hardwareMap.get(CRServo.class, baseName + "L");
+                intakeTwoRight = hardwareMap.get(CRServo.class, baseName + "R");
+
+                // Mirror servos for shared shaft
+                ((CRServo) intakeTwo).setDirection(CRServo.Direction.FORWARD);
+                intakeTwoRight.setDirection(CRServo.Direction.REVERSE);
+                break;
+
             default:
                 throw new IllegalStateException("Unknown IntakeMode: " + mode);
         }
@@ -114,7 +135,11 @@ public class Intake {
      * Only works in DUAL_INDEPENDENT_TOGGLE mode
      */
     public void toggleIntakeTwo() {
-        if (mode != IntakeMode.DUAL_INDEPENDENT_TOGGLE) return;
+        if (mode != IntakeMode.DUAL_INDEPENDENT_TOGGLE &&
+                mode != IntakeMode.DUAL_STAGE_SERVO_BOTTOM) {
+            return;
+        }
+
         intakeTwoState = !intakeTwoState;
         applyIntakeTwoPower();
     }
@@ -189,7 +214,7 @@ public class Intake {
         intakeOneState = false;
         intakeTwoState = false;
         applyIntakeOnePower();
-        applyIntakeTwoPower();
+        applyIntakeTwoPower();  // This now handles intakeTwoRight too
     }
     
     // ==================== GETTERS ====================
@@ -211,23 +236,28 @@ public class Intake {
     }
     
     // ==================== PRIVATE HELPER METHODS ====================
-    
+
     private void applyIntakeOnePower() {
         if (intakeOne == null) return;
-        
+
         double power = intakeOneState ? intakeControl.intakeOnePower : 0.0;
-        
+
         if (intakeOne instanceof DcMotorEx) {
             ((DcMotorEx) intakeOne).setPower(power);
         } else if (intakeOne instanceof CRServo) {
             ((CRServo) intakeOne).setPower(power);
         }
     }
-    
+
     private void applyIntakeTwoPower() {
         if (intakeTwo == null) return;
-        
+
         double power = intakeTwoState ? intakeControl.intakeTwoPower : 0.0;
         ((CRServo) intakeTwo).setPower(power);
+
+        // Also control right servo if present (DUAL_STAGE_SERVO_BOTTOM mode)
+        if (intakeTwoRight != null) {
+            intakeTwoRight.setPower(power);
+        }
     }
 }

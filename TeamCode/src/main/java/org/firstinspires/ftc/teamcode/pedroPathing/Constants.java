@@ -29,7 +29,7 @@ public class Constants {
     //  (for Pedro Pathing Tuning OpMode, provides the 2nd parameter for createFollower()
     //////////////////////////////////  \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 // =======================TODO: CHANGE THIS WHEN PUSHING CODE========================= //
-    private static final MainCharacter TUNING_ROBOT = MainCharacter.ROBOT_22154;  // TEST_BOT, ROBOT_11846, ROBOT_22154
+    private static final MainCharacter TUNING_ROBOT = MainCharacter.ROBOT_11846;  // TEST_BOT, ROBOT_11846, ROBOT_22154
 // =========================DID YOU CHANGE IT?!===============================
 ///  \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\  //////////////////////////////////////
 
@@ -53,8 +53,8 @@ public class Constants {
 
     private static FollowerConstants testBotFollowerConstants = new FollowerConstants()
             .mass(9.53)   // kg - Must be updated after weighing (kg = Lbs / 2.2046)
-            .forwardZeroPowerAcceleration(-50.943) // in/s^2
-            .lateralZeroPowerAcceleration(-63.789) // in/s^2
+            .forwardZeroPowerAcceleration(-45.86237723816607) // in/s^2
+            .lateralZeroPowerAcceleration(-69.3200755294708) // in/s^2
 //            .useSecondaryHeadingPIDF(true)
             .translationalPIDFCoefficients(new PIDFCoefficients(0.375, 0, 0.025, 0));
 
@@ -68,8 +68,8 @@ public class Constants {
             .leftRearMotorDirection(DcMotorSimple.Direction.REVERSE)
             .rightFrontMotorDirection(DcMotorSimple.Direction.FORWARD)
             .rightRearMotorDirection(DcMotorSimple.Direction.FORWARD)
-            .xVelocity(41.356) // in/s
-            .yVelocity(31.839); // in/s
+            .xVelocity(42.68823290246679) // in/s
+            .yVelocity(33.44927521953133); // in/s
 
     private static PinpointConstants testBotLocalizerConstants = new PinpointConstants()
             .forwardPodY(3) // inches
@@ -134,12 +134,12 @@ public class Constants {
             .yVelocity(31.839);
 
     private static PinpointConstants robot11846LocalizerConstants = new PinpointConstants()
-            .forwardPodY(1)
-            .strafePodX(-6)
+            .forwardPodY(2.875)
+            .strafePodX(6)
             .distanceUnit(DistanceUnit.INCH)
             .hardwareMapName("pinpoint")
             .encoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD)
-            .forwardEncoderDirection(GoBildaPinpointDriver.EncoderDirection.FORWARD)
+            .forwardEncoderDirection(GoBildaPinpointDriver.EncoderDirection.REVERSED)
             .strafeEncoderDirection(GoBildaPinpointDriver.EncoderDirection.REVERSED);
 
 // ----------------------------------------------------------------------

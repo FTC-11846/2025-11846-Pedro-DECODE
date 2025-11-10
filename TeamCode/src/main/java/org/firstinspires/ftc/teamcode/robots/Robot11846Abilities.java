@@ -12,9 +12,9 @@ public class Robot11846Abilities extends CharacterStats {
 
     public static class ShooterConstants {
         public static double HIGH_VELOCITY_RPM = 3000;
-        public static double LOW_VELOCITY_RPM = 2600;
+        public static double LOW_VELOCITY_RPM = 2400;
         public static double BASELINE_POWER = 395.0;
-        public static double PIDF_P = 2.0;
+        public static double PIDF_P = 1.0;
     }
 
     public static class BallFeedConstants {
@@ -24,11 +24,12 @@ public class Robot11846Abilities extends CharacterStats {
         public static double FEED_IDLE_POS = 0.5;
         public static double FEED_LEFT_SWEEP = -0.4;
         public static double FEED_RIGHT_SWEEP = 0.4;
+        public static double IDLE_POWER = -0.2;  // NEW: Slow reverse when idle
     }
 
     public static class VisionConstants {
-        public static double CAMERA_FORWARD_OFFSET = 6.0;  // TODO: Measure actual offset!
-        public static double CAMERA_RIGHT_OFFSET = 2.5;
+        public static double CAMERA_FORWARD_OFFSET = 0;  // TODO: Measure actual offset!
+        public static double CAMERA_RIGHT_OFFSET = 0;
         public static double CAMERA_HEADING_OFFSET = 0.0;
     }
 
@@ -52,6 +53,7 @@ public class Robot11846Abilities extends CharacterStats {
         ballFeedConfig.ballFeedIdlePos = BallFeedConstants.FEED_IDLE_POS;
         ballFeedConfig.ballFeedLeftSweep = BallFeedConstants.FEED_LEFT_SWEEP;
         ballFeedConfig.ballFeedRightSweep = BallFeedConstants.FEED_RIGHT_SWEEP;
+        ballFeedConfig.idlePower = BallFeedConstants.IDLE_POWER;  // NEW
 
         // Intake config
         intakeConfig.intakeModeName = getIntakeMode().toString();
@@ -118,20 +120,20 @@ public class Robot11846Abilities extends CharacterStats {
     }
     
     // ==================== INTAKE CONFIGURATION ====================
-    
+
     @Override
     public IntakeMode getIntakeMode() {
-        return IntakeMode.SINGLE_TOGGLE;  // One motor, toggle on/off
+        return IntakeMode.DUAL_STAGE_SERVO_BOTTOM;  // NEW mode
     }
-    
+
     @Override
     public String getIntakeOneMotorName() {
-        return "intakeMotor";  // Single DCMotorEx
+        return "intakeMotor";  // Top motor (unchanged)
     }
-    
+
     @Override
     public String getIntakeTwoMotorName() {
-        return null;  // No second intake
+        return "bottomIntakeServo";  // Base name - constructor will append L/R
     }
     
     // ==================== COLOR SENSOR CONFIGURATION ====================
