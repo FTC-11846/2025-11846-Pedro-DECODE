@@ -18,12 +18,12 @@ public class Robot11846Abilities extends CharacterStats {
     }
 
     public static class BallFeedConstants {
-        public static double FEED_DURATION = 0.5;     // Gate lowering time
-        public static double REVERSE_DURATION = 0.5;  // Gate raising time (return)
-        public static double HOLD_DURATION = 0.3;     // Hold gate down for ball to pass
-        public static double FEED_IDLE_POS = 0.5;
-        public static double FEED_LEFT_SWEEP = -0.4;
-        public static double FEED_RIGHT_SWEEP = 0.4;
+        public static double FEED_DURATION = 0.75;     // Gate lowering time
+        public static double REVERSE_DURATION = 0.0;  // Gate raising time (return)
+        public static double HOLD_DURATION = 0.0;     // Hold gate down for ball to pass
+        public static double FEED_IDLE_POS = 0.0;
+        public static double FEED_LEFT_SWEEP = -0.0;
+        public static double FEED_RIGHT_SWEEP = 0.0;
         public static double IDLE_POWER = -0.2;  // NEW: Slow reverse when idle
     }
 

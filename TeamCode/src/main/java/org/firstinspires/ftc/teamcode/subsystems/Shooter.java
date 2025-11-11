@@ -22,17 +22,45 @@ public class Shooter {
     public static VelocityControl velocityControl = new VelocityControl();
     public static AutoAim autoAim = new AutoAim();
     public static PIDF pidf = new PIDF();
-    
-    // ==================== NESTED CONFIG CLASSES ====================
+
+
+//    // ==================== 22154 NESTED CONFIG CLASSES ====================
+//
+//    // Used to scale shooter RPM's
+//    public static class VelocityControl {
+//        public double minPowerRPM = 2700;
+//        public double maxPowerRPM = 3125;
+//    }
+//
+//    public static class AutoAim {
+//        public double linearCorrectionFactor = 24.0;
+//        public double headingPGain = 0.02;
+//        public double maxTrackingRotation = 0.3;
+//        public double headingDeadbandDeg = 2.0;
+//        public double singleShotDuration = 120.0;
+//        public double autoAimSpinDownTime = 120.0;
+//        public double overrideThreshold = 0.15;
+////        public double tagLossTimeout = 1.0;   // Muted, currently no usages
+//    }
+//
+//    public static class PIDF {
+//        public double pidfI = 0.2;
+//        public double pidfD = 0.0;
+//        public double nominalVoltage = 12.5;
+//        public double maxTicksPerSec = 3000.0;
+//        public boolean debugRunWithoutEncoder = false;
+//        public double debugPower = 1.0;
+//    }
+    // ==================== 11846 NESTED CONFIG CLASSES ====================
 
     // Used to scale shooter RPM's
     public static class VelocityControl {
-        public double minPowerRPM = 2700;
-        public double maxPowerRPM = 3125;
+        public double minPowerRPM = 3800;
+        public double maxPowerRPM = 4500;
     }
     
     public static class AutoAim {
-        public double linearCorrectionFactor = 24.0;
+        public double linearCorrectionFactor = 34.0;
         public double headingPGain = 0.02;
         public double maxTrackingRotation = 0.3;
         public double headingDeadbandDeg = 2.0;
@@ -112,7 +140,7 @@ public class Shooter {
         if (stats.hasDualShooters()) {
             shooterMotorR = hardwareMap.get(DcMotorEx.class, stats.getShooterMotorRName());
             shooterMotorR.setDirection(DcMotorSimple.Direction.FORWARD);
-            
+
             if (pidf.debugRunWithoutEncoder) {
                 shooterMotorR.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
             } else {
@@ -240,7 +268,7 @@ public class Shooter {
     }
     
     // ==================== DEBUG GETTERS (FOR TUNING) ====================
-    
+
     /**
      * Get raw motor encoder position in ticks
      * Used for debugging encoder connections and motor behavior
@@ -248,7 +276,7 @@ public class Shooter {
     public int getRawPositionTicks() {
         return shooterMotorL.getCurrentPosition();
     }
-    
+
     /**
      * Get current commanded motor power (-1.0 to 1.0)
      * Used for verifying velocity control is applying correct power
@@ -257,7 +285,7 @@ public class Shooter {
     public double getShooterLPower() {
         return shooterMotorL.getPower();
     }
-    
+
     /**
      * Get current motor run mode (e.g., RUN_USING_ENCODER)
      * Used for verifying motor configuration
@@ -265,7 +293,7 @@ public class Shooter {
     public DcMotor.RunMode getShooterLRunMode() {
         return shooterMotorL.getMode();
     }
-    
+
     /**
      * Get raw velocity in ticks per second
      * Used for debugging velocity control and PIDF tuning
@@ -273,7 +301,7 @@ public class Shooter {
     public double getRawVelocity() {
         return shooterMotorL.getVelocity();
     }
-    
+
     // ==================== EMERGENCY STOP ====================
     
     /**
