@@ -51,7 +51,7 @@ public enum StartingPosition {
                 return new Pose(56, 8, Math.toRadians(90));
             case FAR:
                 // Blue far position: far side, facing toward audience
-                return new Pose(15, 112, Math.toRadians(0));
+                return new Pose(26.18, 130.9, Math.toRadians(-36.5));
             default:
                 throw new IllegalStateException("Unknown starting position: " + this);
         }

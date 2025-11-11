@@ -84,10 +84,11 @@ public class Constants {
 
     private static FollowerConstants robot22154FollowerConstants = new FollowerConstants()
             .mass(15.88)
-            .forwardZeroPowerAcceleration(-50.943)
-            .lateralZeroPowerAcceleration(-63.789)
+            .forwardZeroPowerAcceleration(-30.453093036274215)
+            .lateralZeroPowerAcceleration(-75.86724421555218)
             //.useSecondaryHeadingPIDF(true)
-            .translationalPIDFCoefficients(new PIDFCoefficients(0.375, 0, 0.025, 0));
+            .translationalPIDFCoefficients(new PIDFCoefficients(0.375, 0, 0.025, 0))
+            .headingPIDFCoefficients(new PIDFCoefficients(2, 0.01, 0, 0.01));
 
     private static MecanumConstants robot22154DriveConstants = new MecanumConstants()
             .maxPower(1)
@@ -99,8 +100,8 @@ public class Constants {
             .leftRearMotorDirection(DcMotorSimple.Direction.REVERSE)
             .rightFrontMotorDirection(DcMotorSimple.Direction.FORWARD)
             .rightRearMotorDirection(DcMotorSimple.Direction.FORWARD)
-            .xVelocity(41.356)
-            .yVelocity(31.839);
+            .xVelocity(53.64255938192052)
+            .yVelocity(39.0105528343381);
 
     private static PinpointConstants robot22154LocalizerConstants = new PinpointConstants()
             .forwardPodY(3)

@@ -50,12 +50,12 @@ public class Auto3BallPark extends BaseOpMode {
         public static double SHOOT_Y_NEAR = 30.0;  // Near audience side
         public static double SHOOT_Y_FAR = 114.0;  // Far side
         public static double SHOOT_HEADING_NEAR = 115.0;  // Face blue wall (toward goal)
-        public static double SHOOT_HEADING_FAR = 155.0;  // Face blue wall (toward goal)
+        public static double SHOOT_HEADING_FAR = 160.0;  // Face blue wall (toward goal)
 
         // Park position (BLUE coordinates - observation zone)
         public static double PARK_X = 44.0;  // Closer to red wall
         public static double PARK_Y_NEAR = 40.0;
-        public static double PARK_Y_FAR = 80.0;
+        public static double PARK_Y_FAR = 70.0;
         public static double PARK_HEADING_DEG = 270.0;  // Face audience
         
         // Timeouts (seconds)
@@ -120,7 +120,8 @@ public class Auto3BallPark extends BaseOpMode {
         buildPaths();
         
         // Follow first path
-        follower.followPath(pathToShoot, true);
+        follower.followPath(pathToShoot, false);
+        shooter.setHighVelocity();
         
         // Start state machine
         currentState = AutoState.MOVE_TO_SHOOT;
@@ -273,7 +274,7 @@ public class Auto3BallPark extends BaseOpMode {
     }
 
     private void handleHoldPos() {
-        if (stateTimer.seconds() > 2){
+        if (stateTimer.seconds() > 0.0){
             follower.followPath(pathToShoot, false);
             currentState = AutoState.AUTO_AIM;
             stateTimer.reset();

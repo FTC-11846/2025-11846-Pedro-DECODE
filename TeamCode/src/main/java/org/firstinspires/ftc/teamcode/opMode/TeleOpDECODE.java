@@ -165,7 +165,12 @@ public class TeleOpDECODE extends BaseOpMode {
          * NOTE: the really stupid inlay hint for the 4th param is Opposite! We must
          * set it "true" for field-relative driving!
          */
-        follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, rotationInput, true);
+//        if(ballFeed.getBot() == "22154"){
+//            follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, rotationInput, false);
+//        } else {
+            follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, rotationInput, true);
+        //}
+
     }
 
     /**

@@ -11,8 +11,8 @@ public class Robot22154Abilities extends CharacterStats {
     // ==================== TUNABLE CONSTANTS ====================
     
     public static class ShooterConstants {
-        public static double HIGH_VELOCITY_RPM = 4000;
-        public static double LOW_VELOCITY_RPM = 1500;
+        public static double HIGH_VELOCITY_RPM = 3000;
+        public static double LOW_VELOCITY_RPM = 2700;
         public static double BASELINE_POWER = 2000.0;
         public static double PIDF_P = 10.0;
     }
@@ -31,7 +31,7 @@ public class Robot22154Abilities extends CharacterStats {
         public static double CAMERA_Z_OFFSET = 13.5; // TODO: Add these new constants to all robots.classes!
         public static double CAMERA_PITCH = 10.6;  // TODO: Switch from our own 2-param estimation to full FTC SDK pose estimation!
         public static double CAMERA_ROLL = 0;
-        public static double CAMERA_YAW = 0.0;
+        public static double CAMERA_YAW = -3.0;
     }
 
     // ==================== CONFIGURATION APPLICATION ====================
