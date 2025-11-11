@@ -12,6 +12,12 @@
     import com.qualcomm.robotcore.util.ElapsedTime;
     import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 
+    import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+    import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
+    import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
+    import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
+
+
     import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
     import org.firstinspires.ftc.teamcode.subsystems.BallFeed;
     import org.firstinspires.ftc.teamcode.robots.CharacterStats;
@@ -372,17 +378,35 @@
         // robot-specific orientation
         private void initializeIMU() {
             imu = hardwareMap.get(IMU.class, "imu");
-
-            // Get robot-specific orientation
             CharacterStats stats = character.getAbilities();
-            RevHubOrientationOnRobot orientation = new RevHubOrientationOnRobot(
-                    stats.getIMULogoDirection(),
-                    stats.getIMUUsbDirection()
-            );
+
+            RevHubOrientationOnRobot orientation;
+
+            /// Special case: 11846 has non-orthogonal mounting, This is a very hacky way to
+            ///  to do this, but it may be years before we ever see another non-Orthog IMU, so
+            ///  we can just delete this after this season.  Or build it right to keep.
+            if (character == MainCharacter.ROBOT_11846) {
+                orientation = new RevHubOrientationOnRobot(
+                        new Orientation(
+                                AxesReference.INTRINSIC,
+                                AxesOrder.ZYX,
+                                AngleUnit.DEGREES,
+                                -90,  // Z rotation
+                                -45,  // Y rotation
+                                90,   // X rotation
+                                0     // acquisitionTime
+                        )
+                );
+            } else {
+                // Everyone else: Simple orthogonal mounting
+                orientation = new RevHubOrientationOnRobot(
+                        stats.getIMULogoDirection(),
+                        stats.getIMUUsbDirection()
+                );
+            }
 
             imu.initialize(new IMU.Parameters(orientation));
         }
-
         private void initializeSubsystems() {
 
                 // If IMU not yet initialized, do it now
@@ -404,14 +428,14 @@
 
             // Only initialize intake if robot has it
             if (character.getAbilities().getIntakeMode() != CharacterStats.IntakeMode.NONE) {
-                intake = new Intake(hardwareMap, character);
+                intake = new Intake(hardwareMap, character.getAbilities());
             } else {
                 intake = null;
             }
 
             // Only initialize color sensors if robot has them
             if (character.getAbilities().hasColorSensors()) {
-                colorSensors = new ColorSensors(hardwareMap, character);
+                colorSensors = new ColorSensors(hardwareMap, character.getAbilities());
             } else {
                 colorSensors = null;
             }

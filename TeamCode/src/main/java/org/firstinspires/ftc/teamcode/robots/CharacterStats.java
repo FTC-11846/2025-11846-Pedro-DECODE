@@ -393,6 +393,7 @@ public abstract class CharacterStats {
         NONE,                       // No intake hardware
         SINGLE_TOGGLE,              // Single motor, toggle on/off
         DUAL_INDEPENDENT_TOGGLE,    // Two motors, each toggles independently
-        SINGLE_CONTINUOUS           // Single motor, runs while button held
+        SINGLE_CONTINUOUS,          // Single motor, runs while button held
+        DUAL_STAGE_SERVO_BOTTOM     // NEW: Motor top + dual servos bottom (shared shaft)
     }
 }
