@@ -131,8 +131,8 @@ public class Constants {
             .leftRearMotorDirection(DcMotorSimple.Direction.REVERSE)
             .rightFrontMotorDirection(DcMotorSimple.Direction.FORWARD)
             .rightRearMotorDirection(DcMotorSimple.Direction.FORWARD)
-            .xVelocity(41.356)
-            .yVelocity(31.839);
+            .xVelocity(63.012)
+            .yVelocity(47.0); //estimate based on 50% increase to .xVelocity
 
     private static PinpointConstants robot11846LocalizerConstants = new PinpointConstants()
             .forwardPodY(2.875)

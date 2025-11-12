@@ -175,24 +175,23 @@ public class TeleOpDECODE extends BaseOpMode {
 
     /**
      * Calculate rotation power to track goal using P controller
-     */
-    /**
-     * Calculate rotation power to track goal using P controller
      * Uses AprilTag when visible, falls back to localization pose
      */
     private double calculateTrackingRotation() {
         if (!trackingEnabled) return 0;
 
         Vision.AutoAimResult result = vision.getAutoAimData();
-
         double headingError;
 
         if (result.success) {
             // ====== VISION-BASED AUTO-AIM ======
             // Tag is visible - calculate bearing to SHOOTING TARGET (not tag)
-
             Pose robotPose = follower.getPose();
-            Pose shootingTarget = Vision.goalPositions.getShootingTarget(result.tagId);
+            Pose shootingTarget = vision.getShootingTarget(result.tagId);
+
+            if (shootingTarget == null) {
+                return 0;  // Safety check
+            }
 
             // Calculate bearing to shooting target
             double dx = shootingTarget.getX() - robotPose.getX();
@@ -216,15 +215,16 @@ public class TeleOpDECODE extends BaseOpMode {
         } else {
             // ====== LOCALIZATION-BASED AUTO-AIM ======
             // Tag lost - calculate from pose to SHOOTING TARGET
-
             Pose robotPose = follower.getPose();
-            Pose shootingTarget = Vision.goalPositions.getShootingTarget(
-                    alliance.isBlue() ? Vision.tagIds.blueGoalTagId : Vision.tagIds.redGoalTagId
-            );
+            int goalTagId = alliance.isBlue() ? Vision.config.blueGoalTagId : Vision.config.redGoalTagId;
+            Pose shootingTarget = vision.getShootingTarget(goalTagId);
+
+            if (shootingTarget == null) {
+                return 0;  // Safety check
+            }
 
             double dx = shootingTarget.getX() - robotPose.getX();
             double dy = shootingTarget.getY() - robotPose.getY();
-
             double bearingToTarget = Math.atan2(dy, dx);
             double currentHeading = robotPose.getHeading();
 
@@ -236,8 +236,7 @@ public class TeleOpDECODE extends BaseOpMode {
 
             // Calculate distance for shooter velocity
             double distance = Math.hypot(dx, dy);
-            shooter.setAutoAimVelocity(distance,
-                    alliance.isBlue() ? Vision.tagIds.blueGoalTagId : Vision.tagIds.redGoalTagId);
+            shooter.setAutoAimVelocity(distance, goalTagId);
 
             lastAutoAimMessage = String.format("Pose track (%.1f in, %.1f°)",
                     distance, headingError);
@@ -252,20 +251,6 @@ public class TeleOpDECODE extends BaseOpMode {
         return headingError * Shooter.autoAim.headingPGain;
     }
 
-    /**
-     * Get goal pose based on current alliance
-     */
-    private Pose getGoalPose() {
-        if (alliance.isBlue()) {
-            return new Pose(Vision.goalPositions.blueGoalX,
-                    Vision.goalPositions.blueGoalY,
-                    Math.toRadians(180));
-        } else {
-            return new Pose(Vision.goalPositions.redGoalX,
-                    Vision.goalPositions.redGoalY,
-                    0);
-        }
-    }
 
     // ==================== GP1: SHOOTER Motor CONTROLS (MOVED FROM GP2!) ====================
 
@@ -292,9 +277,9 @@ public class TeleOpDECODE extends BaseOpMode {
     }
 
     /**
-     *  This function is the entry point to AutoAim w/ AutoTracking
-     *  Recently enhanced (Oct-29) to fully rely on localization for activation
-     *  or whenever goalTag is lost
+     * This function is the entry point to AutoAim w/ AutoTracking
+     * Recently enhanced (Oct-29) to fully rely on localization for activation
+     * or whenever goalTag is lost
      */
     private void performSingleShotAutoAim() {
         Vision.AutoAimResult result = vision.getAutoAimData();
@@ -304,18 +289,22 @@ public class TeleOpDECODE extends BaseOpMode {
             shooter.setAutoAimVelocity(result.distanceInches, result.tagId);
             lastAutoAimMessage = result.message + " - Tracking";
         } else {
-            // No tag - calculate from pose
+            // No tag - calculate from pose to shooting target
             Pose robotPose = follower.getPose();
-            Pose goalPose = getGoalPose();
+            int goalTagId = alliance.isBlue() ? Vision.config.blueGoalTagId : Vision.config.redGoalTagId;
+            Pose shootingTarget = vision.getShootingTarget(goalTagId);
 
-            double dx = goalPose.getX() - robotPose.getX();
-            double dy = goalPose.getY() - robotPose.getY();
-            double distance = Math.hypot(dx, dy);
+            if (shootingTarget != null) {
+                double dx = shootingTarget.getX() - robotPose.getX();
+                double dy = shootingTarget.getY() - robotPose.getY();
+                double distance = Math.hypot(dx, dy);
 
-            shooter.setAutoAimVelocity(distance,
-                    alliance.isBlue() ? Vision.tagIds.blueGoalTagId : Vision.tagIds.redGoalTagId);
-
-            lastAutoAimMessage = String.format("Pose-based (%.1f in)", distance);
+                shooter.setAutoAimVelocity(distance, goalTagId);
+                lastAutoAimMessage = String.format("Pose-based (%.1f in)", distance);
+            } else {
+                lastAutoAimMessage = "FAILED - No shooting target available";
+                return;  // Don't enable tracking if we can't aim
+            }
         }
 
         // Always enable (whether tag visible or not)

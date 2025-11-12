@@ -53,10 +53,17 @@ public class Robot22154Abilities extends CharacterStats {
 
         intakeConfig.intakeModeName = getIntakeMode().name();
 
-        // Vision/Camera offset
-        visionConfig.cameraForwardOffset = VisionConstants.CAMERA_FORWARD_OFFSET;
-        visionConfig.cameraRightOffset = VisionConstants.CAMERA_RIGHT_OFFSET;
-        visionConfig.cameraHeadingOffset = VisionConstants.CAMERA_YAW;
+        /**
+        Vision/Camera offsets.  We write directly to vision_Config,
+         which is just CharacterStats unique reference to the exact same
+         static object instance defined, instantiated, and used by Vision class
+        */
+        vision_Config.cameraPosX = VisionConstants.CAMERA_RIGHT_OFFSET;
+        vision_Config.cameraPosY = VisionConstants.CAMERA_FORWARD_OFFSET;
+        vision_Config.cameraPosZ = VisionConstants.CAMERA_Z_OFFSET;
+        vision_Config.cameraYaw = VisionConstants.CAMERA_YAW;
+        vision_Config.cameraPitch = VisionConstants.CAMERA_PITCH;
+        vision_Config.cameraRoll = VisionConstants.CAMERA_ROLL;
 
         // IMU config
         imuConfig.logoFacingDirection = "UP";
