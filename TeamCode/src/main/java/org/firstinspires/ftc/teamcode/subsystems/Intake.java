@@ -256,7 +256,7 @@ public class Intake {
         ((CRServo) intakeTwo).setPower(power);
 
         // Also control right servo if present (DUAL_STAGE_SERVO_BOTTOM mode)
-        if (intakeTwoRight != null) {
+        if (mode == IntakeMode.DUAL_STAGE_SERVO_BOTTOM) {
             intakeTwoRight.setPower(power);
         }
     }

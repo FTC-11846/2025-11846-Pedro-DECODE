@@ -55,8 +55,15 @@ public class Shooter {
 
     // Used to scale shooter RPM's
     public static class VelocityControl {
-        public double minPowerRPM = 3800;
-        public double maxPowerRPM = 4500;
+        //11846 Numbers
+        public double minPowerRPM11846 = 3800;
+        public double maxPowerRPM11846 = 4500;
+        //22154 Numbers
+        public double minPowerRPM22154 = 2350;
+        public double maxPowerRPM22154 = 3050;
+
+        public double minPowerRPM;
+        public double maxPowerRPM;
     }
     
     public static class AutoAim {
@@ -125,7 +132,7 @@ public class Shooter {
         
         // Initialize left/primary motor (all robots have this)
         shooterMotorL = hardwareMap.get(DcMotorEx.class, stats.getShooterMotorLName());
-        if(stats.getShortName() == "TB"){
+        if(stats.getShortName() != "22154"){
             shooterMotorL.setDirection(DcMotorSimple.Direction.FORWARD);
         }else{
             shooterMotorL.setDirection(DcMotorSimple.Direction.REVERSE);
@@ -139,7 +146,11 @@ public class Shooter {
         // Initialize right motor only if robot has dual shooters
         if (stats.hasDualShooters()) {
             shooterMotorR = hardwareMap.get(DcMotorEx.class, stats.getShooterMotorRName());
-            shooterMotorR.setDirection(DcMotorSimple.Direction.FORWARD);
+            if(stats.getShortName() == "22154"){
+                shooterMotorR.setDirection(DcMotorSimple.Direction.FORWARD);
+            } else {
+                shooterMotorR.setDirection(DcMotorSimple.Direction.REVERSE);
+            }
 
             if (pidf.debugRunWithoutEncoder) {
                 shooterMotorR.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
@@ -148,6 +159,16 @@ public class Shooter {
             }
         } else {
             shooterMotorR = null;
+        }
+    }
+
+    public void setProperShooterVelocities(){
+        if (stats.getShortName() == "22154") {
+            Shooter.velocityControl.maxPowerRPM = Shooter.velocityControl.minPowerRPM22154;
+            Shooter.velocityControl.maxPowerRPM = Shooter.velocityControl.maxPowerRPM22154;
+        } else {
+            Shooter.velocityControl.maxPowerRPM = Shooter.velocityControl.minPowerRPM11846;
+            Shooter.velocityControl.maxPowerRPM = Shooter.velocityControl.maxPowerRPM11846;
         }
     }
     

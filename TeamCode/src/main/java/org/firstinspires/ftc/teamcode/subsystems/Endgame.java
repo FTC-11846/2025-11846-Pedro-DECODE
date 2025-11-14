@@ -30,8 +30,8 @@ public class Endgame {
         public double liftPower = 1.0;
         public double holdPower = 0.0;
         public double lowerPower = -1.0;
-        public double foldInPower = 1.0;
-        public double foldOutPower = 1.0;
+        public double foldInPower = 0.7;
+        public double foldOutPower = -0.7;
     }
 
     // ==================== STATE TRACKING ====================
@@ -123,7 +123,7 @@ public class Endgame {
     }
 
     public String getRobotName() {
-        return stats.getDisplayName();
+        return stats.getShortName();
     }
 
 }

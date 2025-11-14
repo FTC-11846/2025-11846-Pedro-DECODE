@@ -49,7 +49,7 @@ public class Auto3BallPark extends BaseOpMode {
         public static double SHOOT_X = 72.0;  // Mid-field (field center)
         public static double SHOOT_Y_NEAR = 30.0;  // Near audience side
         public static double SHOOT_Y_FAR = 114.0;  // Far side
-        public static double SHOOT_HEADING_NEAR = 115.0;  // Face blue wall (toward goal)
+        public static double SHOOT_HEADING_NEAR = 120.0;  // Face blue wall (toward goal)
         public static double SHOOT_HEADING_FAR = 160.0;  // Face blue wall (toward goal)
 
         // Park position (BLUE coordinates - observation zone)
@@ -116,6 +116,7 @@ public class Auto3BallPark extends BaseOpMode {
     
     @Override
     protected void onStart() {
+        shooter.setProperShooterVelocities();
         // Build paths based on selected position (uses Pedro coordinates!)
         buildPaths();
         
@@ -315,7 +316,11 @@ public class Auto3BallPark extends BaseOpMode {
         // Future enhancement: Could add logic to move closer if confidence low
         
         // Set auto-aim velocity and start shooting
-        shooter.setAutoAimVelocity(result.distanceInches, result.tagId);
+        if(startPoseInSelectMenu.toString().contains("Far")){
+            shooter.setLowVelocity();
+        } else {
+            shooter.setAutoAimVelocity(result.distanceInches, result.tagId);
+        }
         currentState = AutoState.SHOOT;
         stateTimer.reset();
     }
@@ -324,6 +329,7 @@ public class Auto3BallPark extends BaseOpMode {
 
         intake.startIntakeOne();
         intake.startIntakeTwo();
+
 
         // Wait for shooter to reach velocity
         double velocityError = Math.abs(

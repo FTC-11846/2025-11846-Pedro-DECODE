@@ -215,6 +215,8 @@
                 return;
             }
 
+            shooter.setProperShooterVelocities();
+
             // Create follower with selected starting pose
             follower = Constants.createFollower(hardwareMap, character);
 

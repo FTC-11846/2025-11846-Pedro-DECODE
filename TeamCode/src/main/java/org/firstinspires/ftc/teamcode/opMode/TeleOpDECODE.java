@@ -416,12 +416,19 @@ public class TeleOpDECODE extends BaseOpMode {
     // ==================== GP1: ENDGAME SYSTEM ====================
 
     private void handleEndgameControls(){
-        if(gamepad1.right_trigger > 0.75 && gamepad1.left_trigger > 0.75){
-            // Run both functions; the correct one will set the motor speeds inside the endgame system
-            endgame.runEndgameFunction();
-        //} else if(gamepad1.right_bumper){
-        //    endgame.reverseEndgameFunction();
-        } else{
+        if (endgame.getRobotName() == "11846") {
+            if(gamepad1.left_trigger >= 0.75){
+                endgame.runEndgameFunction();
+            } else if(gamepad1.right_trigger >= 0.75){
+                endgame.reverseEndgameFunction();
+            }
+        } else {
+            if(gamepad1.right_trigger > 0.75 && gamepad1.left_trigger > 0.75){
+                // Run both functions; the correct one will set the motor speeds inside the endgame system
+                endgame.runEndgameFunction();
+                //} else if(gamepad1.right_bumper){
+                //    endgame.reverseEndgameFunction();
+            }
         }
     }
 
