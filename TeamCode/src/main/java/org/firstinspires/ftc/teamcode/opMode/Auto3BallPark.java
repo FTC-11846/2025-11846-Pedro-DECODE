@@ -329,8 +329,6 @@ public class Auto3BallPark extends BaseOpMode {
 
         intake.startIntakeOne();
         intake.startIntakeTwo();
-
-
         // Wait for shooter to reach velocity
         double velocityError = Math.abs(
             shooter.getTargetVelocityRPM() - shooter.getActualVelocityRPM()

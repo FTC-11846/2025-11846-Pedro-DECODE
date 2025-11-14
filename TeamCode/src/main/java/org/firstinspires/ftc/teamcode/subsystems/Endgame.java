@@ -107,6 +107,8 @@ public class Endgame {
         if (motorR != null){ //Lift
             motorL.setPower(endgameSpeeds.holdPower);
             motorR.setPower(endgameSpeeds.holdPower);
+        } else {
+            motorL.setPower(endgameSpeeds.holdPower);
         }
     }
 

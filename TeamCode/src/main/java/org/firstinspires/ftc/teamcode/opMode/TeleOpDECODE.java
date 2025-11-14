@@ -418,6 +418,8 @@ public class TeleOpDECODE extends BaseOpMode {
                 endgame.runEndgameFunction();
             } else if(gamepad1.right_trigger >= 0.75){
                 endgame.reverseEndgameFunction();
+            } else {
+                endgame.hold();
             }
         } else {
             if(gamepad1.right_trigger > 0.75 && gamepad1.left_trigger > 0.75){
