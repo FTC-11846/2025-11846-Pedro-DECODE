@@ -18,19 +18,22 @@ public class Robot11846Abilities extends CharacterStats {
     }
 
     public static class BallFeedConstants {
-        public static double FEED_DURATION = 0.75;     // Gate lowering time
-        public static double REVERSE_DURATION = 0.0;  // Gate raising time (return)
-        public static double HOLD_DURATION = 0.0;     // Hold gate down for ball to pass
-        public static double FEED_IDLE_POS = 0.0;
-        public static double FEED_LEFT_SWEEP = -0.0;
-        public static double FEED_RIGHT_SWEEP = 0.0;
-        public static double IDLE_POWER = -0.2;  // NEW: Slow reverse when idle
+        public static double FEED_DURATION = 1.5;     // Gate lowering time
+//        public static double REVERSE_DURATION = 0.0;  // Gate raising time (return)
+//        public static double HOLD_DURATION = 0.0;     // Hold gate down for ball to pass
+//        public static double FEED_IDLE_POS = 0.0;
+//        public static double FEED_LEFT_SWEEP = -0.0;
+//        public static double FEED_RIGHT_SWEEP = 0.0;
+        public static double IDLE_POWER = -0.0;  // NEW: Slow reverse when idle
     }
 
     public static class VisionConstants {
-        public static double CAMERA_FORWARD_OFFSET = 0;  // TODO: Measure actual offset!
+        public static double CAMERA_FORWARD_OFFSET = 0.5;  /// FTC SDK uses X, Y, Z offsets, Confirm what X & Y means!
         public static double CAMERA_RIGHT_OFFSET = 0;
-        public static double CAMERA_HEADING_OFFSET = 0.0;
+        public static double CAMERA_Z_OFFSET = 16.0; // TODO: Add these new constants to all robots.classes!
+        public static double CAMERA_PITCH = 5;      // TODO: Measure angles, just a guess.
+        public static double CAMERA_ROLL = 0;
+        public static double CAMERA_YAW = 0.0;
     }
 
     // ==================== CONFIGURATION APPLICATION ====================
@@ -48,20 +51,27 @@ public class Robot11846Abilities extends CharacterStats {
 
         // BallFeed config - NOW INCLUDING SERVO POSITIONS
         ballFeedConfig.feedDuration = BallFeedConstants.FEED_DURATION;
-        ballFeedConfig.reverseDuration = BallFeedConstants.REVERSE_DURATION;
-        ballFeedConfig.holdDuration = BallFeedConstants.HOLD_DURATION;
-        ballFeedConfig.ballFeedIdlePos = BallFeedConstants.FEED_IDLE_POS;
-        ballFeedConfig.ballFeedLeftSweep = BallFeedConstants.FEED_LEFT_SWEEP;
-        ballFeedConfig.ballFeedRightSweep = BallFeedConstants.FEED_RIGHT_SWEEP;
+//        ballFeedConfig.reverseDuration = BallFeedConstants.REVERSE_DURATION;
+//        ballFeedConfig.holdDuration = BallFeedConstants.HOLD_DURATION;
+//        ballFeedConfig.ballFeedIdlePos = BallFeedConstants.FEED_IDLE_POS;
+//        ballFeedConfig.ballFeedLeftSweep = BallFeedConstants.FEED_LEFT_SWEEP;
+//        ballFeedConfig.ballFeedRightSweep = BallFeedConstants.FEED_RIGHT_SWEEP;
         ballFeedConfig.idlePower = BallFeedConstants.IDLE_POWER;  // NEW
 
         // Intake config
         intakeConfig.intakeModeName = getIntakeMode().toString();
 
-        // Vision/Camera offset
-        visionConfig.cameraForwardOffset = VisionConstants.CAMERA_FORWARD_OFFSET;
-        visionConfig.cameraRightOffset = VisionConstants.CAMERA_RIGHT_OFFSET;
-        visionConfig.cameraHeadingOffset = VisionConstants.CAMERA_HEADING_OFFSET;
+        /**
+        Vision/Camera offsets.  We write directly to vision_Config,
+         which is just CharacterStats unique reference to the exact same
+         static object instance defined, instantiated, and used by Vision class
+        */
+        vision_Config.cameraPosX = VisionConstants.CAMERA_RIGHT_OFFSET;
+        vision_Config.cameraPosY = VisionConstants.CAMERA_FORWARD_OFFSET;
+        vision_Config.cameraPosZ = VisionConstants.CAMERA_Z_OFFSET;
+        vision_Config.cameraYaw = VisionConstants.CAMERA_YAW;
+        vision_Config.cameraPitch = VisionConstants.CAMERA_PITCH;
+        vision_Config.cameraRoll = VisionConstants.CAMERA_ROLL;
 
         // IMU config
         imuConfig.logoFacingDirection = "LEFT";

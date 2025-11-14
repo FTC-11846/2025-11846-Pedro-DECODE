@@ -146,12 +146,11 @@ public class Shooter {
         // Initialize right motor only if robot has dual shooters
         if (stats.hasDualShooters()) {
             shooterMotorR = hardwareMap.get(DcMotorEx.class, stats.getShooterMotorRName());
-            if(stats.getShortName() == "22154"){
-                shooterMotorR.setDirection(DcMotorSimple.Direction.FORWARD);
-            } else {
+            if (stats.getShortName() != "22154"){
                 shooterMotorR.setDirection(DcMotorSimple.Direction.REVERSE);
+            } else {
+                shooterMotorR.setDirection(DcMotorSimple.Direction.FORWARD);
             }
-
             if (pidf.debugRunWithoutEncoder) {
                 shooterMotorR.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
             } else {
@@ -171,7 +170,7 @@ public class Shooter {
             Shooter.velocityControl.maxPowerRPM = Shooter.velocityControl.maxPowerRPM11846;
         }
     }
-    
+
     // ==================== PUBLIC CONTROL METHODS ====================
     
     /**

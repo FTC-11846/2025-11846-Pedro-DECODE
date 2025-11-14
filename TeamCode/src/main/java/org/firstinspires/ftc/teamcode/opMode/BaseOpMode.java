@@ -416,6 +416,7 @@
                     initializeIMU();
                 }
 
+
                 shooter = new Shooter(hardwareMap, character);
                 endgame = new Endgame(hardwareMap, character);
             ballFeed = new BallFeed(hardwareMap, character);
@@ -470,8 +471,8 @@
 
             for (AprilTagDetection detection : vision.getDetections()) {
                 if (!vision.isValidDetection(detection)) continue;
-                if (detection.id != Vision.tagIds.blueGoalTagId &&
-                        detection.id != Vision.tagIds.redGoalTagId) {
+                if (detection.id != Vision.config.blueGoalTagId &&
+                        detection.id != Vision.config.redGoalTagId) {
                     continue;
                 }
                 if (detection.ftcPose.range < bestRange) {
@@ -561,79 +562,11 @@
         }
 
         /**
-         * Calculate robot pose from AprilTag detection with camera offset correction
-         * Uses Vision's goal tag positions (20 Blue, 24 Red)
-         * Applies robot-specific camera offset to transform camera pose to robot center pose
+         * Calculate robot pose from AprilTag detection using SDK's pose estimation
+         * All the hard work is done by Vision.getRobotPoseFromTag()!
          */
         private Pose calculatePoseFromTag(AprilTagDetection tag) {
-            // Get tag field position from Vision
-            Pose tagPose = getGoalTagPose(tag.id);
-            if (tagPose == null) {
-                return null; // Unknown tag
-            }
-
-            // Get detection data
-            if (tag.ftcPose == null) {
-                return null; // Invalid detection
-            }
-
-            double range = tag.ftcPose.range;      // Distance to tag (inches)
-            double bearing = tag.ftcPose.bearing;  // Horizontal angle to tag (degrees)
-
-            // Convert bearing to radians
-            double bearingRad = Math.toRadians(bearing);
-
-            // Robot's heading (from current odometry - we trust this more than vision)
-            double robotHeading = follower.getPose().getHeading();
-
-            // Calculate absolute bearing to tag (in field frame)
-            double absoluteBearing = robotHeading + bearingRad;
-
-            // Calculate CAMERA position (where the measurement originates)
-            // Camera is "range" distance away from tag, at angle "absoluteBearing" FROM the tag
-            double cameraX = tagPose.getX() - range * Math.cos(absoluteBearing);
-            double cameraY = tagPose.getY() - range * Math.sin(absoluteBearing);
-
-            // Get robot-specific camera offset
-            CharacterStats stats = character.getAbilities();
-            double forwardOffset = stats.getCameraForwardOffset();
-            double rightOffset = stats.getCameraRightOffset();
-
-            // Transform camera position to robot center position
-            // Camera offset is in robot frame, need to rotate by robot heading to field frame
-            // Forward offset: along robot's heading direction
-            // Right offset: perpendicular to robot's heading (90° CCW)
-            double robotX = cameraX
-                    - forwardOffset * Math.cos(robotHeading)
-                    + rightOffset * Math.sin(robotHeading);
-            double robotY = cameraY
-                    - forwardOffset * Math.sin(robotHeading)
-                    - rightOffset * Math.cos(robotHeading);
-
-            return new Pose(robotX, robotY, robotHeading);
-        }
-
-        /**
-         * Get the field pose for a goal tag using Vision's configuration
-         * Returns Pose in Pedro coordinates with proper heading
-         */
-        private Pose getGoalTagPose(int tagId) {
-            if (tagId == Vision.tagIds.blueGoalTagId) {
-                // Blue goal on right side of field, facing left (180°)
-                return new Pose(
-                        Vision.goalPositions.blueGoalX,
-                        Vision.goalPositions.blueGoalY,
-                        Math.toRadians(135)
-                );
-            } else if (tagId == Vision.tagIds.redGoalTagId) {
-                // Red goal on left side of field, facing right (0°)
-                return new Pose(
-                        Vision.goalPositions.redGoalX,
-                        Vision.goalPositions.redGoalY,
-                        Math.toRadians(45)
-                );
-            }
-            return null;
+            return vision.getRobotPoseFromTag(tag);
         }
 
         // ==================== UTILITIES ====================

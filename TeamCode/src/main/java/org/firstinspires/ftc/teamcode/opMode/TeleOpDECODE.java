@@ -10,12 +10,20 @@ import com.pedropathing.paths.PathChain;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
+import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 import org.firstinspires.ftc.teamcode.robots.CharacterStats;
 import org.firstinspires.ftc.teamcode.subsystems.ColorSensors;
 import org.firstinspires.ftc.teamcode.subsystems.ColorSensors.BallColor;
 import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.subsystems.Vision;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
+import org.firstinspires.ftc.vision.apriltag.AprilTagGameDatabase;
+import org.firstinspires.ftc.vision.apriltag.AprilTagLibrary;
+import org.firstinspires.ftc.vision.apriltag.AprilTagMetadata;
+
 import java.util.List;
 
 /**
@@ -175,24 +183,23 @@ public class TeleOpDECODE extends BaseOpMode {
 
     /**
      * Calculate rotation power to track goal using P controller
-     */
-    /**
-     * Calculate rotation power to track goal using P controller
      * Uses AprilTag when visible, falls back to localization pose
      */
     private double calculateTrackingRotation() {
         if (!trackingEnabled) return 0;
 
         Vision.AutoAimResult result = vision.getAutoAimData();
-
         double headingError;
 
         if (result.success) {
             // ====== VISION-BASED AUTO-AIM ======
             // Tag is visible - calculate bearing to SHOOTING TARGET (not tag)
-
             Pose robotPose = follower.getPose();
-            Pose shootingTarget = Vision.goalPositions.getShootingTarget(result.tagId);
+            Pose shootingTarget = vision.getShootingTarget(result.tagId);
+
+            if (shootingTarget == null) {
+                return 0;  // Safety check
+            }
 
             // Calculate bearing to shooting target
             double dx = shootingTarget.getX() - robotPose.getX();
@@ -216,15 +223,16 @@ public class TeleOpDECODE extends BaseOpMode {
         } else {
             // ====== LOCALIZATION-BASED AUTO-AIM ======
             // Tag lost - calculate from pose to SHOOTING TARGET
-
             Pose robotPose = follower.getPose();
-            Pose shootingTarget = Vision.goalPositions.getShootingTarget(
-                    alliance.isBlue() ? Vision.tagIds.blueGoalTagId : Vision.tagIds.redGoalTagId
-            );
+            int goalTagId = alliance.isBlue() ? Vision.config.blueGoalTagId : Vision.config.redGoalTagId;
+            Pose shootingTarget = vision.getShootingTarget(goalTagId);
+
+            if (shootingTarget == null) {
+                return 0;  // Safety check
+            }
 
             double dx = shootingTarget.getX() - robotPose.getX();
             double dy = shootingTarget.getY() - robotPose.getY();
-
             double bearingToTarget = Math.atan2(dy, dx);
             double currentHeading = robotPose.getHeading();
 
@@ -236,8 +244,7 @@ public class TeleOpDECODE extends BaseOpMode {
 
             // Calculate distance for shooter velocity
             double distance = Math.hypot(dx, dy);
-            shooter.setAutoAimVelocity(distance,
-                    alliance.isBlue() ? Vision.tagIds.blueGoalTagId : Vision.tagIds.redGoalTagId);
+            shooter.setAutoAimVelocity(distance, goalTagId);
 
             lastAutoAimMessage = String.format("Pose track (%.1f in, %.1f°)",
                     distance, headingError);
@@ -252,20 +259,6 @@ public class TeleOpDECODE extends BaseOpMode {
         return headingError * Shooter.autoAim.headingPGain;
     }
 
-    /**
-     * Get goal pose based on current alliance
-     */
-    private Pose getGoalPose() {
-        if (alliance.isBlue()) {
-            return new Pose(Vision.goalPositions.blueGoalX,
-                    Vision.goalPositions.blueGoalY,
-                    Math.toRadians(180));
-        } else {
-            return new Pose(Vision.goalPositions.redGoalX,
-                    Vision.goalPositions.redGoalY,
-                    0);
-        }
-    }
 
     // ==================== GP1: SHOOTER Motor CONTROLS (MOVED FROM GP2!) ====================
 
@@ -292,9 +285,9 @@ public class TeleOpDECODE extends BaseOpMode {
     }
 
     /**
-     *  This function is the entry point to AutoAim w/ AutoTracking
-     *  Recently enhanced (Oct-29) to fully rely on localization for activation
-     *  or whenever goalTag is lost
+     * This function is the entry point to AutoAim w/ AutoTracking
+     * Recently enhanced (Oct-29) to fully rely on localization for activation
+     * or whenever goalTag is lost
      */
     private void performSingleShotAutoAim() {
         Vision.AutoAimResult result = vision.getAutoAimData();
@@ -304,18 +297,22 @@ public class TeleOpDECODE extends BaseOpMode {
             shooter.setAutoAimVelocity(result.distanceInches, result.tagId);
             lastAutoAimMessage = result.message + " - Tracking";
         } else {
-            // No tag - calculate from pose
+            // No tag - calculate from pose to shooting target
             Pose robotPose = follower.getPose();
-            Pose goalPose = getGoalPose();
+            int goalTagId = alliance.isBlue() ? Vision.config.blueGoalTagId : Vision.config.redGoalTagId;
+            Pose shootingTarget = vision.getShootingTarget(goalTagId);
 
-            double dx = goalPose.getX() - robotPose.getX();
-            double dy = goalPose.getY() - robotPose.getY();
-            double distance = Math.hypot(dx, dy);
+            if (shootingTarget != null) {
+                double dx = shootingTarget.getX() - robotPose.getX();
+                double dy = shootingTarget.getY() - robotPose.getY();
+                double distance = Math.hypot(dx, dy);
 
-            shooter.setAutoAimVelocity(distance,
-                    alliance.isBlue() ? Vision.tagIds.blueGoalTagId : Vision.tagIds.redGoalTagId);
-
-            lastAutoAimMessage = String.format("Pose-based (%.1f in)", distance);
+                shooter.setAutoAimVelocity(distance, goalTagId);
+                lastAutoAimMessage = String.format("Pose-based (%.1f in)", distance);
+            } else {
+                lastAutoAimMessage = "FAILED - No shooting target available";
+                return;  // Don't enable tracking if we can't aim
+            }
         }
 
         // Always enable (whether tag visible or not)
@@ -448,9 +445,135 @@ public class TeleOpDECODE extends BaseOpMode {
         }
     }
 
+    /** Temporary DEBUG Telemetry for Field Positions
+     *
+     */
+    /**
+     * DEBUG: Display all field element poses in both coordinate systems
+     * This will help diagnose if tag positions are being converted correctly
+     */
+    private void displayFieldElementPosesDebug() {
+        telemetryM.debug("=== COORDINATE DEBUG ===");
+
+        AprilTagLibrary library = AprilTagGameDatabase.getCurrentGameTagLibrary();
+
+// ===== BLUE GOAL TAG (20) =====
+        AprilTagMetadata blueGoalMeta = library.lookupTag(Vision.config.blueGoalTagId);
+        if (blueGoalMeta != null) {
+            double ftcX = blueGoalMeta.fieldPosition.get(0);
+            double ftcY = blueGoalMeta.fieldPosition.get(1);
+            double ftcZ = blueGoalMeta.fieldPosition.get(2);
+
+            // Convert Quaternion to Orientation to extract angles
+            Orientation orientation = blueGoalMeta.fieldOrientation.toOrientation(
+                    AxesReference.EXTRINSIC,
+                    AxesOrder.XYZ,
+                    AngleUnit.DEGREES
+            );
+            double ftcRoll = orientation.firstAngle;   // X rotation
+            double ftcPitch = orientation.secondAngle; // Y rotation
+            double ftcYaw = orientation.thirdAngle;    // Z rotation
+
+            telemetryM.debug(String.format("BlueGoal(FTC): X=%.1f Y=%.1f Z=%.1f", ftcX, ftcY, ftcZ));
+            telemetryM.debug(String.format("               Yaw=%.1f Pitch=%.1f Roll=%.1f",
+                    ftcYaw, ftcPitch, ftcRoll));
+
+            Pose tagPedro = vision.getGoalTagPose(Vision.config.blueGoalTagId);
+            if (tagPedro != null) {
+                telemetryM.debug(String.format("BlueGoal(PP):  X=%.1f Y=%.1f H=%.1f",
+                        tagPedro.getX(), tagPedro.getY(), Math.toDegrees(tagPedro.getHeading())));
+            }
+
+            Pose shootPedro = vision.getShootingTarget(Vision.config.blueGoalTagId);
+            if (shootPedro != null) {
+                telemetryM.debug(String.format("BlueShoot(PP): X=%.1f Y=%.1f H=%.1f",
+                        shootPedro.getX(), shootPedro.getY(), Math.toDegrees(shootPedro.getHeading())));
+            }
+        }
+
+        telemetryM.debug("");
+
+// ===== RED GOAL TAG (24) =====
+        AprilTagMetadata redGoalMeta = library.lookupTag(Vision.config.redGoalTagId);
+        if (redGoalMeta != null) {
+            double ftcX = redGoalMeta.fieldPosition.get(0);
+            double ftcY = redGoalMeta.fieldPosition.get(1);
+            double ftcZ = redGoalMeta.fieldPosition.get(2);
+
+            // Convert Quaternion to Orientation to extract angles
+            Orientation orientation = redGoalMeta.fieldOrientation.toOrientation(
+                    AxesReference.EXTRINSIC,
+                    AxesOrder.XYZ,
+                    AngleUnit.DEGREES
+            );
+            double ftcRoll = orientation.firstAngle;
+            double ftcPitch = orientation.secondAngle;
+            double ftcYaw = orientation.thirdAngle;
+
+            telemetryM.debug(String.format("RedGoal(FTC):  X=%.1f Y=%.1f Z=%.1f", ftcX, ftcY, ftcZ));
+            telemetryM.debug(String.format("               Yaw=%.1f Pitch=%.1f Roll=%.1f",
+                    ftcYaw, ftcPitch, ftcRoll));
+
+            Pose tagPedro = vision.getGoalTagPose(Vision.config.redGoalTagId);
+            if (tagPedro != null) {
+                telemetryM.debug(String.format("RedGoal(PP):   X=%.1f Y=%.1f H=%.1f",
+                        tagPedro.getX(), tagPedro.getY(), Math.toDegrees(tagPedro.getHeading())));
+            }
+
+            Pose shootPedro = vision.getShootingTarget(Vision.config.redGoalTagId);
+            if (shootPedro != null) {
+                telemetryM.debug(String.format("RedShoot(PP):  X=%.1f Y=%.1f H=%.1f",
+                        shootPedro.getX(), shootPedro.getY(), Math.toDegrees(shootPedro.getHeading())));
+            }
+        }
+        telemetryM.debug("");
+        telemetryM.debug("=== ROBOT STATE ===");
+
+        Pose robotPose = follower.getPose();
+        telemetryM.debug(String.format("Robot(PP):     X=%.1f Y=%.1f H=%.1f",
+                robotPose.getX(), robotPose.getY(), Math.toDegrees(robotPose.getHeading())));
+
+        // Show starting pose for reference
+        telemetryM.debug(String.format("StartPose(PP): %s = X=%.1f Y=%.1f H=%.1f",
+                alliance + " " + startPoseInSelectMenu,
+                actualStartingPose.getX(),
+                actualStartingPose.getY(),
+                Math.toDegrees(actualStartingPose.getHeading())));
+
+        // Vision comparison
+        List<AprilTagDetection> detections = vision.getDetections();
+        for (AprilTagDetection d : detections) {
+            if (vision.isValidDetection(d)) {
+                Pose visionPose = vision.getRobotPoseFromTag(d);
+                if (visionPose != null) {
+                    double error = Math.hypot(
+                            visionPose.getX() - robotPose.getX(),
+                            visionPose.getY() - robotPose.getY()
+                    );
+                    telemetryM.debug(String.format("Vision(PP):    X=%.1f Y=%.1f H=%.1f (err: %.1f)",
+                            visionPose.getX(), visionPose.getY(),
+                            Math.toDegrees(visionPose.getHeading()), error));
+                    telemetryM.debug(String.format("  Tag %d: range=%.1f bearing=%.1f",
+                            d.id, d.ftcPose.range, d.ftcPose.bearing));
+
+                    // Show FTC robot pose from detection
+                    telemetryM.debug(String.format("  RobotFTC: X=%.1f Y=%.1f Z=%.1f Yaw=%.1f",
+                            d.robotPose.getPosition().x,
+                            d.robotPose.getPosition().y,
+                            d.robotPose.getPosition().z,
+                            d.robotPose.getOrientation().getYaw(AngleUnit.DEGREES)));
+                }
+            }
+        }
+
+        telemetryM.debug("");
+    }
+
     // ==================== TELEMETRY ====================
 
     private void displayTelemetry() {
+        displayFieldElementPosesDebug();  /// Field element Pose DEBUG, mute or delete!
+
         List<AprilTagDetection> detections = vision.getDetections();
 
         // === APRILTAG VISION ===

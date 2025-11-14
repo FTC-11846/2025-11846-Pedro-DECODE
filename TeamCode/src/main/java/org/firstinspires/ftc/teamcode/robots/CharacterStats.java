@@ -3,6 +3,8 @@ package org.firstinspires.ftc.teamcode.robots;
 import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 
+import org.firstinspires.ftc.teamcode.subsystems.Vision;
+
 /**
  * CharacterStats - Abstract base class with robot-specific configuration
  * 
@@ -20,7 +22,7 @@ public abstract class CharacterStats {
     public static ShooterConfig shooterConfig = new ShooterConfig();
     public static BallFeedConfig ballFeedConfig = new BallFeedConfig();
     public static IntakeConfig intakeConfig = new IntakeConfig();
-    public static VisionConfig visionConfig = new VisionConfig();
+    public static Vision.Config vision_Config = Vision.config;
     public static IMUConfig imuConfig = new IMUConfig();  // ← ADD THIS
 
 
@@ -39,25 +41,19 @@ public abstract class CharacterStats {
     }
 
     public static class BallFeedConfig {
-        public double feedDuration = 0.25;
+        public double feedDuration = 0.0;
         public double reverseDuration = 0.0;  // 22154: prevents double-feed
         public double holdDuration = 0.0;      // 11846: gate hold time
         public double idlePower = 0.0;  // NEW: Power when idle (negative = slow reverse)
 
         // NEW: Servo position control (for 11846)
-        public double ballFeedIdlePos = 0.5;      // Center/neutral position
-        public double ballFeedLeftSweep = -0.4;   // Left gate offset from idle
-        public double ballFeedRightSweep = 0.4;   // Right gate offset from idle
+        public double ballFeedIdlePos = 0.0;      // Center/neutral position
+        public double ballFeedLeftSweep = 0.0;   // Left gate offset from idle
+        public double ballFeedRightSweep = 0.0;   // Right gate offset from idle
     }
     
     public static class IntakeConfig {
         public String intakeModeName = "NONE";
-    }
-
-    public static class VisionConfig {
-        public double cameraForwardOffset = 0.0;  // Inches forward from robot center (+ = forward)
-        public double cameraRightOffset = 0.0;    // Inches right from robot center (+ = right)
-        public double cameraHeadingOffset = 0.0;  // Radians CCW from robot heading
     }
 
     public static class IMUConfig {
@@ -321,32 +317,6 @@ public abstract class CharacterStats {
     public String getColorSensorName() {
         return null;
     }
-    
-    // ==================== VISION/CAMERA CONFIGURATION ====================
-
-    /**
-     * Get camera forward offset from robot center in inches
-     * Positive = camera is forward of robot center
-     */
-    public double getCameraForwardOffset() {
-        return visionConfig.cameraForwardOffset;
-    }
-
-    /**
-     * Get camera right offset from robot center in inches
-     * Positive = camera is right of robot center
-     */
-    public double getCameraRightOffset() {
-        return visionConfig.cameraRightOffset;
-    }
-
-    /**
-     * Get camera heading offset from robot heading in radians
-     * Positive = camera rotated CCW from robot heading
-     */
-    public double getCameraHeadingOffset() {
-        return visionConfig.cameraHeadingOffset;
-    }
 
     // ==================== IMU CONFIGURATION ====================
 
@@ -379,8 +349,8 @@ public abstract class CharacterStats {
 
     public enum BallFeedMode {
         SINGLE_CRSERVO,           // TestBot: 1 CRServo
-        DUAL_CRSERVO_INDEPENDENT, // 22154: 2 CRServos, independent control
-        DUAL_SERVO_GATES          // 11846: 2 Position Servos (gates)
+        DUAL_CRSERVO_INDEPENDENT, // 22154 & 11846: 2 CRServos, independent control
+        DUAL_SERVO_GATES          // None: 2 Position Servos (gates)
     }
 
     public enum EndgameSystem {
