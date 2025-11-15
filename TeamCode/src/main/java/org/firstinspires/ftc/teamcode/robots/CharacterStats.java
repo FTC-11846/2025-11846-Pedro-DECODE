@@ -3,8 +3,6 @@ package org.firstinspires.ftc.teamcode.robots;
 import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 
-import org.firstinspires.ftc.teamcode.subsystems.Vision;
-
 /**
  * CharacterStats - Abstract base class with robot-specific configuration
  * 
@@ -22,7 +20,7 @@ public abstract class CharacterStats {
     public static ShooterConfig shooterConfig = new ShooterConfig();
     public static BallFeedConfig ballFeedConfig = new BallFeedConfig();
     public static IntakeConfig intakeConfig = new IntakeConfig();
-    public static Vision.Config vision_Config = Vision.config;
+    public static VisionConfig visionConfig = new VisionConfig();
     public static IMUConfig imuConfig = new IMUConfig();  // ← ADD THIS
 
 
@@ -54,6 +52,12 @@ public abstract class CharacterStats {
     
     public static class IntakeConfig {
         public String intakeModeName = "NONE";
+    }
+
+    public static class VisionConfig {
+        public double cameraForwardOffset = 0.0;  // Inches forward from robot center (+ = forward)
+        public double cameraRightOffset = 0.0;    // Inches right from robot center (+ = right)
+        public double cameraHeadingOffset = 0.0;  // Radians CCW from robot heading
     }
 
     public static class IMUConfig {
@@ -316,6 +320,32 @@ public abstract class CharacterStats {
     @Deprecated
     public String getColorSensorName() {
         return null;
+    }
+    
+    // ==================== VISION/CAMERA CONFIGURATION ====================
+
+    /**
+     * Get camera forward offset from robot center in inches
+     * Positive = camera is forward of robot center
+     */
+    public double getCameraForwardOffset() {
+        return visionConfig.cameraForwardOffset;
+    }
+
+    /**
+     * Get camera right offset from robot center in inches
+     * Positive = camera is right of robot center
+     */
+    public double getCameraRightOffset() {
+        return visionConfig.cameraRightOffset;
+    }
+
+    /**
+     * Get camera heading offset from robot heading in radians
+     * Positive = camera rotated CCW from robot heading
+     */
+    public double getCameraHeadingOffset() {
+        return visionConfig.cameraHeadingOffset;
     }
 
     // ==================== IMU CONFIGURATION ====================

@@ -103,7 +103,7 @@ public class Shooter {
         
         // Initialize left/primary motor (all robots have this)
         shooterMotorL = hardwareMap.get(DcMotorEx.class, stats.getShooterMotorLName());
-        if(stats.getShortName() != "22154"){
+        if(stats.getShortName() == "TB"){
             shooterMotorL.setDirection(DcMotorSimple.Direction.FORWARD);
         }else{
             shooterMotorL.setDirection(DcMotorSimple.Direction.REVERSE);
@@ -117,11 +117,8 @@ public class Shooter {
         // Initialize right motor only if robot has dual shooters
         if (stats.hasDualShooters()) {
             shooterMotorR = hardwareMap.get(DcMotorEx.class, stats.getShooterMotorRName());
-            if (stats.getShortName() != "22154"){
-                shooterMotorR.setDirection(DcMotorSimple.Direction.REVERSE);
-            } else {
-                shooterMotorR.setDirection(DcMotorSimple.Direction.FORWARD);
-            }
+            shooterMotorR.setDirection(DcMotorSimple.Direction.FORWARD);
+
             if (pidf.debugRunWithoutEncoder) {
                 shooterMotorR.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
             } else {
