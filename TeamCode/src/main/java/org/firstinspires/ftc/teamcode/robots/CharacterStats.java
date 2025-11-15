@@ -41,15 +41,15 @@ public abstract class CharacterStats {
     }
 
     public static class BallFeedConfig {
-        public double feedDuration = 0.0;
+        public double feedDuration = 0.25;
         public double reverseDuration = 0.0;  // 22154: prevents double-feed
         public double holdDuration = 0.0;      // 11846: gate hold time
         public double idlePower = 0.0;  // NEW: Power when idle (negative = slow reverse)
 
         // NEW: Servo position control (for 11846)
-        public double ballFeedIdlePos = 0.0;      // Center/neutral position
-        public double ballFeedLeftSweep = 0.0;   // Left gate offset from idle
-        public double ballFeedRightSweep = 0.0;   // Right gate offset from idle
+        public double ballFeedIdlePos = 0.5;      // Center/neutral position
+        public double ballFeedLeftSweep = -0.4;   // Left gate offset from idle
+        public double ballFeedRightSweep = 0.4;   // Right gate offset from idle
     }
     
     public static class IntakeConfig {
@@ -349,8 +349,8 @@ public abstract class CharacterStats {
 
     public enum BallFeedMode {
         SINGLE_CRSERVO,           // TestBot: 1 CRServo
-        DUAL_CRSERVO_INDEPENDENT, // 22154 & 11846: 2 CRServos, independent control
-        DUAL_SERVO_GATES          // None: 2 Position Servos (gates)
+        DUAL_CRSERVO_INDEPENDENT, // 22154: 2 CRServos, independent control
+        DUAL_SERVO_GATES          // 11846: 2 Position Servos (gates)
     }
 
     public enum EndgameSystem {

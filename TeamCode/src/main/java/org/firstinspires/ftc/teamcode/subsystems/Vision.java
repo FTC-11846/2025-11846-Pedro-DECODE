@@ -2,15 +2,14 @@ package org.firstinspires.ftc.teamcode.subsystems;
 
 import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.configurables.annotations.IgnoreConfigurable;
-import com.pedropathing.ftc.InvertedFTCCoordinates;
-import com.pedropathing.ftc.PoseConverter;
+import com.pedropathing.follower.Follower;
+import com.pedropathing.ftc.FTCCoordinates;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.geometry.PedroCoordinates;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.robotcore.external.navigation.Position;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 import org.firstinspires.ftc.vision.VisionPortal;
@@ -25,12 +24,15 @@ import java.util.List;
 /**
  * Vision subsystem using FTC SDK's built-in pose estimation
  *
- * KEY FEATURES:
+ * KEY FEATURES (Session 2 refactor):
  * - Uses AprilTagProcessor.setCameraPose() for accurate robot pose calculation
- * - Uses detection.robotPose (includes camera offset automatically)
- * - Uses PedroPathing's official FTC→Pedro coordinate conversion
- * - Single consolidated conversion point for all coordinate transforms
- * - No manual trigonometry or homebrew geometry!
+ * - Extracts global robot pose from detection.robotPose field
+ * - Uses PedroPathing's official FTC->Pedro coordinate conversion
+ * - Uses current season's tag library from AprilTagGameDatabase
+ * - No manual trigonometry or homebrew geometry needed!
+ * - New Config/Constants pattern updated with Vision as first system
+ * |__ All constants w/ defaults in Subsystems, CharacterStats maps the same object instance
+ * |__ and applyConfiguration() overwrites robot-specific values. (Update to iterative Reflection function)
  */
 @Configurable
 public class Vision {
@@ -41,6 +43,7 @@ public class Vision {
 
     public static class Config {
         // Tag IDs (from current game)
+        @Deprecated  ///  The FTC AprilTag code directly returns metadata, we don't need our own lookup tables and matching!
         public int blueGoalTagId = 20;
         public int redGoalTagId = 24;
         public int motifGppTagId = 21;
@@ -68,22 +71,22 @@ public class Vision {
 
         /**
          * Get shooting target pose (offset from goal tag)
-         * Fetches tag position from library, converts to Pedro, applies offset
+         * Fetches actual tag position from library, then applies offset
          */
         public Pose getShootingTarget(int tagId, AprilTagLibrary library) {
             AprilTagMetadata tagMetadata = library.lookupTag(tagId);
-            if (tagMetadata == null || tagMetadata.fieldPosition == null) {
+            if (tagMetadata == null) {
                 return null;  // Tag not in library
             }
 
             // Get tag position from library (FTC coordinates)
-            double ftcX = tagMetadata.fieldPosition.get(0);  // X in inches
-            double ftcY = tagMetadata.fieldPosition.get(1);  // Y in inches
+            double tagX = tagMetadata.fieldPosition.get(0);  // X in inches
+            double tagY = tagMetadata.fieldPosition.get(1);  // Y in inches
 
-            // Convert FTC tag position to Pedro
-            Pose tagPedroPose = convertFTCToPedro(ftcX, ftcY, 0);
-            double pedroTagX = tagPedroPose.getX();
-            double pedroTagY = tagPedroPose.getY();
+            // Convert FTC tag position to Pedro using official converter
+            Pose pedroPose = convertFTCPoseToPedro(tagX, tagY, 0);
+            double pedroTagX = pedroPose.getX();
+            double pedroTagY = pedroPose.getY();
 
             // Apply shooting offset based on tag
             if (tagId == blueGoalTagId) {
@@ -114,10 +117,11 @@ public class Vision {
      * Uses current season's tag library and robot-specific camera pose
      */
     public Vision(HardwareMap hardwareMap) {
-        // Get current season's tag library
+        // Get current season's tag library (has all positions already!)
         tagLibrary = AprilTagGameDatabase.getCurrentGameTagLibrary();
 
         // Configure camera pose from Vision.config (set by robot's applyConfiguration)
+        // FTC SDK uses: X=right, Y=forward, Z=up (INCHES)
         Position cameraPosition = new Position(
                 DistanceUnit.INCH,
                 config.cameraPosX,
@@ -134,7 +138,8 @@ public class Vision {
                 0  // acquisitionTime
         );
 
-        // Initialize AprilTag processor with library
+        // Initialize AprilTag processor with library, SDK now handles all transformations!
+        // AprilTagProcessor.Builder() defaults to inches & degrees, so no Units not needed!
         aprilTag = new AprilTagProcessor.Builder()
                 .setTagLibrary(tagLibrary)
                 .setCameraPose(cameraPosition, cameraOrientation)
@@ -166,6 +171,7 @@ public class Vision {
         List<AprilTagDetection> detections = getDetections();
 
         for (AprilTagDetection detection : detections) {
+            // Check metadata AND robotPose are not null
             if (detection.metadata != null && detection.robotPose != null) {
                 if (detection.id == config.blueGoalTagId ||
                         detection.id == config.redGoalTagId) {
@@ -195,9 +201,11 @@ public class Vision {
     }
 
     /**
-     * Extract robot pose from AprilTag detection
-     * Uses FTC SDK's robotPose (already accounts for camera offset!)
-     * Converts to Pedro coordinates using official pipeline
+     * Extract robot pose from AprilTag detection using SDK's pose estimation
+     * Uses PedroPathing's official FTC->Pedro coordinate conversion
+     *
+     * FTC SDK robotPose: X toward red, Y toward blue (left), Z up, origin at field center (inches)
+     * Pedro: X toward red, Y toward far side, origin at bottom-left
      *
      * @return Pedro Pose or null if pose unavailable
      */
@@ -206,14 +214,14 @@ public class Vision {
             return null;
         }
 
-        // Extract FTC SDK pose components
+        // Extract FTC SDK pose (already accounts for camera offset!)
         Position robotPosition = detection.robotPose.getPosition();
         YawPitchRollAngles orientation = detection.robotPose.getOrientation();
 
-        // Convert to Pedro coordinates
-        return convertFTCToPedro(
-                robotPosition.x,
-                robotPosition.y,
+        // Use PedroPathing's official FTC->Pedro converter
+        return convertFTCPoseToPedro(
+                robotPosition.x,  // inches
+                robotPosition.y,  // inches
                 orientation.getYaw(AngleUnit.RADIANS)
         );
     }
@@ -224,16 +232,19 @@ public class Vision {
      */
     public Pose getGoalTagPose(int tagId) {
         AprilTagMetadata metadata = tagLibrary.lookupTag(tagId);
-        if (metadata == null || metadata.fieldPosition == null) {
+        if (metadata == null) {
             return null;
         }
 
         // Get position from library (FTC coordinates)
-        double ftcX = metadata.fieldPosition.get(0);
-        double ftcY = metadata.fieldPosition.get(1);
+        double ftcX = metadata.fieldPosition.get(0);  // inches
+        double ftcY = metadata.fieldPosition.get(1);  // inches
 
-        // Convert to Pedro (heading not critical for tag positions)
-        return convertFTCToPedro(ftcX, ftcY, 0);
+        // Get heading from tag orientation (optional - may not be needed)
+        double heading = 0;  // Can extract from metadata.fieldOrientation if needed
+
+        // Use official converter
+        return convertFTCPoseToPedro(ftcX, ftcY, heading);
     }
 
     /**
@@ -254,6 +265,7 @@ public class Vision {
     /**
      * Get friendly name for AprilTag ID
      */
+    @Deprecated  ///  The FTC AprilTag code directly returns metadata, we don't need our own lookup tables and matching
     public static String getTagFriendlyName(int tagId) {
         if (tagId == config.blueGoalTagId) return "Blue Goal";
         if (tagId == config.redGoalTagId) return "Red Goal";
@@ -266,9 +278,6 @@ public class Vision {
     /**
      * Get auto-aim data for the goal
      * Returns result object with distance, bearing, and success status
-     *
-     * NOTE: This uses ftcPose for display/telemetry only
-     * Actual auto-aim calculations should use localization pose → shooting target
      */
     public AutoAimResult getAutoAimData() {
         AprilTagDetection goalTag = findGoalTag();
@@ -280,6 +289,7 @@ public class Vision {
             );
         }
 
+        // Use ftcPose for distance/bearing (still useful for display)
         if (goalTag.ftcPose == null) {
             return AutoAimResult.failure("FAILED - Pose estimation unavailable");
         }
@@ -304,35 +314,20 @@ public class Vision {
                 detection.robotPose != null && detection.ftcPose != null;
     }
 
-    // ==================== COORDINATE CONVERSION (CONSOLIDATED) ====================
+    // ==================== COORDINATE CONVERSION HELPER ====================
 
     /**
-     * Convert FTC coordinate system to Pedro coordinate system
-     * Manual conversion since PoseConverter appears to have issues with tag metadata
+     * Convert FTC coordinate system pose to Pedro coordinate system pose
+     * Uses PedroPathing's official coordinate transformation
      *
-     * FTC: Origin at field center (72" from corner)
-     *      X+ toward red, Y+ toward blue (perpendicular left), Z+ up
-     * Pedro: Origin at bottom-left corner
-     *        X+ toward red, Y+ toward far side, Z+ up
-     *
-     * Conversion: Rotate -90° around Z, then shift by (72, 72)
+     * @param x FTC X coordinate (inches, toward red alliance)
+     * @param y FTC Y coordinate (inches, toward blue alliance/left)
+     * @param heading Robot heading in radians
+     * @return Pose in Pedro coordinate system
      */
-    private static Pose convertFTCToPedro(double ftcX, double ftcY, double ftcYawRad) {
-        // Step 1: Rotate -90° around Z axis
-        // x' = y, y' = -x
-        double rotatedX = ftcY;
-        double rotatedY = -ftcX;
-        double rotatedHeading = ftcYawRad - Math.PI / 2;  // Heading also rotates
-
-        // Step 2: Translate origin from center to corner
-        double pedroX = rotatedX + 72.0;
-        double pedroY = rotatedY + 72.0;
-
-        // Normalize heading to -π to π
-        while (rotatedHeading > Math.PI) rotatedHeading -= 2 * Math.PI;
-        while (rotatedHeading < -Math.PI) rotatedHeading += 2 * Math.PI;
-
-        return new Pose(pedroX, pedroY, rotatedHeading);
+    private static Pose convertFTCPoseToPedro(double x, double y, double heading) {
+        return new Pose(x, y, heading, FTCCoordinates.INSTANCE)
+                .getAsCoordinateSystem(PedroCoordinates.INSTANCE);
     }
 
     // ==================== RESULT CLASS ====================
