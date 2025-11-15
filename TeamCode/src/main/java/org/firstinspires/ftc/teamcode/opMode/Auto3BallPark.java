@@ -38,8 +38,8 @@ import java.util.List;
  * - Use Pedro Visualizer for complex paths: https://visualizer.pedropathing.com/
  * - This example uses simple BezierLine paths
  */
-@Autonomous(name = "Auto - 1 Ball + Park", group = "Competition", preselectTeleOp = "TeleOp - Competition")
 @Configurable
+@Autonomous(name = "Auto - 1 Ball + Park", group = "Competition", preselectTeleOp = "TeleOp - Competition")
 public class Auto3BallPark extends BaseOpMode {
     
     // ==================== AUTONOMOUS CONSTANTS (PEDRO COORDINATES) ====================
