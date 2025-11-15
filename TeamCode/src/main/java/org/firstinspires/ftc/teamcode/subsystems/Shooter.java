@@ -28,7 +28,7 @@ public class Shooter {
     public static class VelocityControl {
         //11846 Numbers
         public double minPowerRPM11846 = 2400;
-        public double maxPowerRPM11846 = 3125;
+        public double maxPowerRPM11846 = 3250;
         //22154 Numbers
         public double minPowerRPM22154 = 2350;
         public double maxPowerRPM22154 = 3120;
@@ -42,7 +42,7 @@ public class Shooter {
     }
     
     public static class AutoAim {
-        public double linearCorrectionFactor = 34.0;
+        public double linearCorrectionFactor = 36.0;
         public double headingPGain = 0.015;
         public double maxTrackingRotation = 0.3;
         public double headingDeadbandDeg = 2.0;
@@ -53,10 +53,10 @@ public class Shooter {
     }
     
     public static class PIDF {
-        public double pidfI = 0.2;
+        public double pidfI = 0.25;
         public double pidfD = 0.001;
         public double nominalVoltage = 12.5;
-        public double maxTicksPerSec = 3000.0;
+        public double maxTicksPerSec = 3500.0;
         public boolean debugRunWithoutEncoder = false;
         public double debugPower = 1.0;
     }

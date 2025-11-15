@@ -161,12 +161,15 @@ public class BallFeed {
         if (motorL instanceof CRServo){
             if(stop){
                 leftState = FeedState.IDLE;
+                updateLeftMotor();
             } else {
                 leftState = FeedState.FEEDINGAUTO;
+                leftTimer.reset();  // ADDED
                 updateLeftMotor();
             }
         }
     }
+
 
     /**
      * Feed right lane (trigger by GP2 RT)
@@ -188,6 +191,7 @@ public class BallFeed {
                 updateRightMotor();
             } else {
                 rightState = FeedState.FEEDINGAUTO;
+                rightTimer.reset();  // ADDED
                 updateRightMotor();
             }
         }
@@ -272,6 +276,10 @@ public class BallFeed {
                 break;
 
             case FEEDINGAUTO:
+                if (leftTimer.seconds() >= feedDuration) {
+                    leftState = FeedState.IDLE;
+                    updateLeftMotor();
+                }
                 break;
 
             case HOLDING:
@@ -318,6 +326,10 @@ public class BallFeed {
                 break;
 
             case FEEDINGAUTO:
+                if (rightTimer.seconds() >= feedDuration) {
+                    rightState = FeedState.IDLE;
+                    updateRightMotor();
+                }
                 break;
 
             case HOLDING:
