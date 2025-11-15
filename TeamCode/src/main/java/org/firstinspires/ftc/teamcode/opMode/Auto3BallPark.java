@@ -46,11 +46,11 @@ public class Auto3BallPark extends BaseOpMode {
     
     public static class AutoConstants {
         // Shooting position (BLUE coordinates - auto-mirrored for RED)
-        public static double SHOOT_X = 72.0;  // Mid-field (field center)
-        public static double SHOOT_Y_NEAR = 30.0;  // Near audience side
-        public static double SHOOT_Y_FAR = 114.0;  // Far side
-        public static double SHOOT_HEADING_NEAR = 120.0;  // Face blue wall (toward goal)
-        public static double SHOOT_HEADING_FAR = 160.0;  // Face blue wall (toward goal)
+        public static double SHOOT_X = 56.8;  // Mid-field (field center)
+        public static double SHOOT_Y_NEAR = 15.4;  // Near audience side
+        public static double SHOOT_Y_FAR = 109.0;  // Far side
+        public static double SHOOT_HEADING_NEAR = 110.0;  // Face blue wall (toward goal)
+        public static double SHOOT_HEADING_FAR = 147.6;  // Face blue wall (toward goal)
 
         // Park position (BLUE coordinates - observation zone)
         public static double PARK_X = 44.0;  // Closer to red wall
@@ -327,8 +327,8 @@ public class Auto3BallPark extends BaseOpMode {
     
     private void handleShoot() {
 
-        intake.startIntakeOne();
-        intake.startIntakeTwo();
+        intake.toggleIntakeOne();
+        intake.toggleIntakeTwo();
         // Wait for shooter to reach velocity
         double velocityError = Math.abs(
             shooter.getTargetVelocityRPM() - shooter.getActualVelocityRPM()
