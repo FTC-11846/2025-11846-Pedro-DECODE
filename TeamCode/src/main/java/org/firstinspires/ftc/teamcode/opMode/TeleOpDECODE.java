@@ -150,6 +150,17 @@ public class TeleOpDECODE extends BaseOpMode {
 
     // ==================== GP1: DRIVE CONTROLS ====================
 
+// ==================== CONFIGURABLE PRECISION MODE ====================
+// Add this to BaseOpMode or create a new DriveConfig class
+
+    public static DriveConfig driveConfig = new DriveConfig();
+
+    public static class DriveConfig {
+        public double precisionPowerMultiplier = 0.2;  // Reduce to 20% when held
+    }
+
+// ==================== UPDATED handleDriveControls() ====================
+
     private void handleDriveControls() {
 
         // Check for driver override on rotation during tracking
@@ -167,18 +178,19 @@ public class TeleOpDECODE extends BaseOpMode {
             rotationInput = -gamepad1.right_stick_x;
         }
 
+        // ✨ PRECISION MODE: Reduce power when GP1 Right Bumper held
+        double powerMultiplier = 1.0;
+        if (gamepad1.right_bumper) {
+            powerMultiplier = driveConfig.precisionPowerMultiplier;
+        }
 
-        /**
-         * Field-relative (traditional) drive control!!!  (all robot-centric stripped)
-         * NOTE: the really stupid inlay hint for the 4th param is Opposite! We must
-         * set it "true" for field-relative driving!
-         */
-//        if(ballFeed.getBot() == "22154"){
-//            follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, rotationInput, false);
-//        } else {
-            follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, rotationInput, true);
-        //}
-
+        // Apply precision scaling and send to follower
+        follower.setTeleOpDrive(
+                -gamepad1.left_stick_y * powerMultiplier,  // Forward/back scaled
+                -gamepad1.left_stick_x * powerMultiplier,  // Strafe scaled
+                rotationInput * powerMultiplier,            // Rotation scaled
+                true  // Field-relative
+        );
     }
 
     /**
@@ -574,7 +586,7 @@ public class TeleOpDECODE extends BaseOpMode {
     // ==================== TELEMETRY ====================
 
     private void displayTelemetry() {
-        displayFieldElementPosesDebug();  /// Field element Pose DEBUG, mute or delete!
+     //   displayFieldElementPosesDebug();  /// Field element Pose DEBUG, mute or delete!
 
         List<AprilTagDetection> detections = vision.getDetections();
 
@@ -650,6 +662,12 @@ public class TeleOpDECODE extends BaseOpMode {
                 telemetryM.debug("Bottom/Two: " + (intake.isIntakeTwoRunning() ? "ON" : "OFF"));
             }
             telemetryM.debug("");
+        }
+
+        // Add precision mode indicator
+        if (gamepad1.right_bumper) {
+            telemetryM.debug(String.format("🎯 PRECISION MODE (%.0f%% power)",
+                    driveConfig.precisionPowerMultiplier * 100));
         }
 
         // === BALL FEED ===

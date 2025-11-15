@@ -12,9 +12,9 @@ public class TestBotAbilities extends CharacterStats {
     // ==================== TUNABLE CONSTANTS ====================
     public static class ShooterConstants {
         public static double HIGH_VELOCITY_RPM = 3000;
-        public static double LOW_VELOCITY_RPM = 1000;
-        public static double BASELINE_POWER = 1500.0;
-        public static double PIDF_P = 15.0;
+        public static double LOW_VELOCITY_RPM = 2000;
+        public static double BASELINE_POWER = 250;
+        public static double PIDF_P = 2.0;
     }
 
     public static class BallFeedConstants {
@@ -22,12 +22,12 @@ public class TestBotAbilities extends CharacterStats {
     }
 
     public static class VisionConstants {
-        public static double CAMERA_FORWARD_OFFSET = -7;  /// FTC SDK uses X, Y, Z offsets, Confirm what X & Y means!
-        public static double CAMERA_RIGHT_OFFSET = 0;
-        public static double CAMERA_Z_OFFSET = 13.5; // TODO: Add these new constants to all robots.classes!
-        public static double CAMERA_PITCH = 10.6;  // TODO: Switch from our own 2-param estimation to full FTC SDK pose estimation!
-        public static double CAMERA_ROLL = 0;
-        public static double CAMERA_YAW = -3.0;
+        public static double CAMERA_FORWARD_OFFSET = 7.0;  /// FTC SDK uses X, Y, Z offsets, Confirm what X & Y means!
+        public static double CAMERA_RIGHT_OFFSET = 0.0;
+        public static double CAMERA_Z_OFFSET = 15.0; // TODO: Add these new constants to all robots.classes!
+        public static double CAMERA_PITCH = 6.0;  // TODO: Switch from our own 2-param estimation to full FTC SDK pose estimation!
+        public static double CAMERA_ROLL = 0.0;
+        public static double CAMERA_YAW = 0.0;
     }
 
     // ==================== CONFIGURATION APPLICATION ====================

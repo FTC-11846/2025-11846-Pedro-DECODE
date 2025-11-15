@@ -80,6 +80,15 @@
             public double totalCorrectionHeading = 0;
         }
 
+        // ==================== CONFIGURABLE PRECISION MODE ====================
+// Add this to BaseOpMode or create a new DriveConfig class
+
+        public static DriveConfig driveConfig = new DriveConfig();
+
+        public static class DriveConfig {
+            public double precisionPowerMultiplier = 0.2;  // Reduce to 20% when held
+        }
+
         public static RelocalizationConfig relocalization = new RelocalizationConfig();
         public static PanelsControl panelsControl = new PanelsControl();
         private ElapsedTime relocalizationTimer = new ElapsedTime();

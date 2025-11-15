@@ -31,7 +31,11 @@ public class Shooter {
         public double maxPowerRPM11846 = 3125;
         //22154 Numbers
         public double minPowerRPM22154 = 2350;
-        public double maxPowerRPM22154 = 3050;
+        public double maxPowerRPM22154 = 3120;
+
+        //_TB Numbers
+        public double minPowerRPM_TB = 2400;
+        public double maxPowerRPM_TB = 3125;
 
         public double minPowerRPM;
         public double maxPowerRPM;
@@ -39,7 +43,7 @@ public class Shooter {
     
     public static class AutoAim {
         public double linearCorrectionFactor = 34.0;
-        public double headingPGain = 0.02;
+        public double headingPGain = 0.015;
         public double maxTrackingRotation = 0.3;
         public double headingDeadbandDeg = 2.0;
         public double singleShotDuration = 120.0;
@@ -50,7 +54,7 @@ public class Shooter {
     
     public static class PIDF {
         public double pidfI = 0.2;
-        public double pidfD = 0.0;
+        public double pidfD = 0.001;
         public double nominalVoltage = 12.5;
         public double maxTicksPerSec = 3000.0;
         public boolean debugRunWithoutEncoder = false;
@@ -136,9 +140,12 @@ public class Shooter {
         if (stats.getShortName() == "22154") {
             Shooter.velocityControl.maxPowerRPM = Shooter.velocityControl.minPowerRPM22154;
             Shooter.velocityControl.maxPowerRPM = Shooter.velocityControl.maxPowerRPM22154;
-        } else {
+        } else if (stats.getShortName() == "11846"){
             Shooter.velocityControl.maxPowerRPM = Shooter.velocityControl.minPowerRPM11846;
             Shooter.velocityControl.maxPowerRPM = Shooter.velocityControl.maxPowerRPM11846;
+        } else {
+            Shooter.velocityControl.maxPowerRPM = Shooter.velocityControl.minPowerRPM_TB;
+            Shooter.velocityControl.maxPowerRPM = Shooter.velocityControl.maxPowerRPM_TB;
         }
     }
 
